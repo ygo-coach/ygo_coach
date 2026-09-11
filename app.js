@@ -18,7 +18,7 @@ const LEGACY_STORAGE_KEYS = {
     matches: "ygoMatches"
 };
 
-const APP_VERSION = 6.4;
+const APP_VERSION = "6.4.1";
 
 const ADMIN_EMAIL = "felixlefevre170@gmail.com";
 
@@ -292,6 +292,10 @@ function normalizeProfile(source) {
         ...base,
         decks,
         activeDeckId,
+        cardLanguage:
+            base.cardLanguage === "en"
+                ? "en"
+                : "fr",
         deck:
             activeDeck?.name ||
             legacyDeck ||
@@ -439,7 +443,8 @@ function isExtraDeckCardType(type) {
         "fusion",
         "synchro",
         "xyz",
-        "link"
+        "link",
+        "lien"
     ].some(
         (keyword) =>
             normalized.includes(keyword)
@@ -453,7 +458,10 @@ function isDeckBuildableCardType(type) {
 
     return !(
         normalized.includes("token") ||
-        normalized.includes("skill card")
+        normalized.includes("jeton") ||
+        normalized.includes("skill card") ||
+        normalized.includes("carte compétence") ||
+        normalized.includes("carte competence")
     );
 }
 
@@ -461,11 +469,18 @@ function getCardCopyLimit(card) {
     const status =
         String(
             card?.banTcg || ""
-        ).toLocaleLowerCase("en-US");
+        )
+            .normalize("NFD")
+            .replace(
+                /[\u0300-\u036f]/g,
+                ""
+            )
+            .toLocaleLowerCase("fr-FR");
 
     if (
         status.includes("banned") ||
-        status.includes("forbidden")
+        status.includes("forbidden") ||
+        status.includes("interdit")
     ) {
         return 0;
     }
@@ -477,7 +492,8 @@ function getCardCopyLimit(card) {
     }
 
     if (
-        status.includes("limited")
+        status.includes("limited") ||
+        status.includes("limite")
     ) {
         return 1;
     }
@@ -552,6 +568,189 @@ function normalizeCardSearchText(value) {
         .trim();
 }
 
+function getCardLanguage() {
+    return profile?.cardLanguage === "en"
+        ? "en"
+        : "fr";
+}
+
+function getCardLanguageLabel() {
+    return getCardLanguage() === "fr"
+        ? "Français"
+        : "English";
+}
+
+function getCardDatabaseUpdatedAtKey() {
+    return `${STORAGE_KEYS.cardDatabaseUpdatedAt}:${getCardLanguage()}`;
+}
+
+function getLocalizedCard(card) {
+    if (!card) {
+        return card;
+    }
+
+    const localized =
+        cardDatabase.find(
+            (item) =>
+                String(item.id) ===
+                String(card.id)
+        );
+
+    if (!localized) {
+        return card;
+    }
+
+    return {
+        ...card,
+        name:
+            localized.name ||
+            card.name,
+        type:
+            localized.type ||
+            card.type,
+        archetype:
+            localized.archetype ||
+            card.archetype,
+        banTcg:
+            localized.banTcg ||
+            card.banTcg
+    };
+}
+
+function localizeSavedDeckCards() {
+    if (
+        !Array.isArray(cardDatabase) ||
+        cardDatabase.length === 0
+    ) {
+        return false;
+    }
+
+    let changed = false;
+
+    getMyDecks().forEach(
+        (deck) => {
+            [
+                "mainDeck",
+                "extraDeck",
+                "sideDeck"
+            ].forEach(
+                (zone) => {
+                    deck[zone] =
+                        deck[zone].map(
+                            (card) => {
+                                const localized =
+                                    getLocalizedCard(
+                                        card
+                                    );
+
+                                if (
+                                    localized.name !== card.name ||
+                                    localized.type !== card.type ||
+                                    localized.archetype !== card.archetype ||
+                                    localized.banTcg !== card.banTcg
+                                ) {
+                                    changed = true;
+                                }
+
+                                return localized;
+                            }
+                        );
+                }
+            );
+        }
+    );
+
+    if (changed) {
+        profile.updatedAt =
+            new Date().toISOString();
+
+        saveAll();
+        markProfileDirty();
+    }
+
+    return changed;
+}
+
+function updateCardLanguageUi() {
+    const language =
+        getCardLanguage();
+
+    const select =
+        document.getElementById(
+            "card-language-select"
+        );
+
+    const chip =
+        document.getElementById(
+            "card-language-chip"
+        );
+
+    const search =
+        document.getElementById(
+            "card-search-input"
+        );
+
+    if (select) {
+        select.value =
+            language;
+    }
+
+    if (chip) {
+        chip.textContent =
+            language.toUpperCase();
+    }
+
+    if (search) {
+        search.placeholder =
+            language === "fr"
+                ? "Ex : Floraison de Cendres, Dominus..."
+                : "Ex : Ash Blossom, Dominus...";
+    }
+}
+
+async function setCardLanguage(language) {
+    const nextLanguage =
+        language === "en"
+            ? "en"
+            : "fr";
+
+    if (
+        getCardLanguage() ===
+        nextLanguage
+    ) {
+        updateCardLanguageUi();
+        return;
+    }
+
+    profile.cardLanguage =
+        nextLanguage;
+
+    profile.updatedAt =
+        new Date().toISOString();
+
+    cardDatabase = [];
+    cardDatabaseLoadPromise = null;
+
+    saveAll();
+    markProfileDirty();
+
+    updateCardLanguageUi();
+
+    updateCardDatabaseStatus(
+        `Chargement de la base ${getCardLanguageLabel()}…`
+    );
+
+    await refreshCardDatabase();
+
+    localizeSavedDeckCards();
+
+    renderDeckBuilder();
+    renderMyDeckLibrary();
+    renderMyDeckChoices();
+    renderDuelDeckHelpers();
+    renderCardSearchResults();
+}
+
 function openLocalCardDatabase() {
     return new Promise(
         (resolve, reject) => {
@@ -567,7 +766,7 @@ function openLocalCardDatabase() {
 
             const request =
                 indexedDB.open(
-                    CARD_DATABASE_NAME,
+                    `${CARD_DATABASE_NAME}-${getCardLanguage()}`,
                     1
                 );
 
@@ -750,8 +949,7 @@ async function refreshCardDatabase(
             const updatedAt =
                 Number(
                     localStorage.getItem(
-                        STORAGE_KEYS
-                            .cardDatabaseUpdatedAt
+                        getCardDatabaseUpdatedAtKey()
                     ) || 0
                 );
 
@@ -784,8 +982,10 @@ async function refreshCardDatabase(
                     !navigator.onLine
                 ) {
                     updateCardDatabaseStatus(
-                        `${cardDatabase.length} cartes TCG en cache.`
+                        `${cardDatabase.length} cartes TCG • ${getCardLanguageLabel()} • en cache.`
                     );
+
+                    localizeSavedDeckCards();
 
                     return cardDatabase;
                 }
@@ -805,12 +1005,20 @@ async function refreshCardDatabase(
             }
 
             updateCardDatabaseStatus(
-                "Mise à jour de la base TCG…"
+                `Mise à jour de la base TCG • ${getCardLanguageLabel()}…`
             );
+
+            const language =
+                getCardLanguage();
+
+            const apiUrl =
+                language === "fr"
+                    ? "https://db.ygoprodeck.com/api/v7/cardinfo.php?format=tcg&language=fr"
+                    : "https://db.ygoprodeck.com/api/v7/cardinfo.php?format=tcg";
 
             const response =
                 await fetch(
-                    "https://db.ygoprodeck.com/api/v7/cardinfo.php?format=tcg"
+                    apiUrl
                 );
 
             if (!response.ok) {
@@ -842,7 +1050,7 @@ async function refreshCardDatabase(
                             (a, b) =>
                                 a.name.localeCompare(
                                     b.name,
-                                    "en",
+                                    getCardLanguage(),
                                     {
                                         sensitivity:
                                             "base"
@@ -868,8 +1076,7 @@ async function refreshCardDatabase(
                 );
 
                 localStorage.setItem(
-                    STORAGE_KEYS
-                        .cardDatabaseUpdatedAt,
+                    getCardDatabaseUpdatedAtKey(),
                     String(Date.now())
                 );
             } catch (error) {
@@ -880,8 +1087,10 @@ async function refreshCardDatabase(
             }
 
             updateCardDatabaseStatus(
-                `${cards.length} cartes TCG à jour.`
+                `${cards.length} cartes TCG • ${getCardLanguageLabel()} • à jour.`
             );
+
+            localizeSavedDeckCards();
 
             return cards;
         })()
@@ -945,6 +1154,7 @@ function openDeckBuilder(deckId) {
     refreshCardDatabase()
         .then(
             () => {
+                renderDeckBuilder();
                 renderCardSearchResults();
             }
         );
@@ -1252,12 +1462,16 @@ function renderDeckZone(
 
     container.innerHTML =
         cards
+            .map(
+                (card) =>
+                    getLocalizedCard(card)
+            )
             .slice()
             .sort(
                 (a, b) =>
                     a.name.localeCompare(
                         b.name,
-                        "en",
+                        getCardLanguage(),
                         {
                             sensitivity:
                                 "base"
@@ -1391,7 +1605,7 @@ function renderCardSearchResults() {
 
                     return a.name.localeCompare(
                         b.name,
-                        "en"
+                        getCardLanguage()
                     );
                 }
             )
@@ -1738,12 +1952,17 @@ function getSideSourceCards(
     }
 
     const source =
-        direction === "in"
-            ? deck.sideDeck
-            : [
-                ...deck.mainDeck,
-                ...deck.extraDeck
-            ];
+        (
+            direction === "in"
+                ? deck.sideDeck
+                : [
+                    ...deck.mainDeck,
+                    ...deck.extraDeck
+                ]
+        ).map(
+            (card) =>
+                getLocalizedCard(card)
+        );
 
     const merged =
         new Map();
@@ -1843,7 +2062,7 @@ function renderSideAssistant(
                         (a, b) =>
                             a.name.localeCompare(
                                 b.name,
-                                "en"
+                                getCardLanguage()
                             )
                     )
                     .map(
@@ -1887,7 +2106,12 @@ function getEffectiveMainDeckForGame(
     const map =
         new Map();
 
-    deck.mainDeck.forEach(
+    deck.mainDeck
+        .map(
+            (card) =>
+                getLocalizedCard(card)
+        )
+        .forEach(
         (card) => {
             map.set(
                 normalizeDeckKey(
@@ -1946,7 +2170,12 @@ function getEffectiveMainDeckForGame(
         sideIn.forEach(
             (name) => {
                 const sourceCard =
-                    deck.sideDeck.find(
+                    deck.sideDeck
+                        .map(
+                            (card) =>
+                                getLocalizedCard(card)
+                        )
+                        .find(
                         (card) =>
                             normalizeDeckKey(
                                 card.name
@@ -4991,6 +5220,7 @@ function renderProfile() {
             "À définir";
     }
 
+    updateCardLanguageUi();
     renderMyDeckLibrary();
     renderMyDeckChoices();
     renderOpponentCatalogSummary();
@@ -6107,6 +6337,19 @@ document
 
 document
     .getElementById(
+        "card-language-select"
+    )
+    .addEventListener(
+        "change",
+        async (event) => {
+            await setCardLanguage(
+                event.target.value
+            );
+        }
+    );
+
+document
+    .getElementById(
         "close-deck-builder"
     )
     .addEventListener(
@@ -6125,7 +6368,9 @@ document
                 true
             );
 
+            renderDeckBuilder();
             renderCardSearchResults();
+            renderDuelDeckHelpers();
         }
     );
 
@@ -7067,6 +7312,7 @@ toggleGameSection(2, false);
 toggleGameSection(3, false);
 renderEverything();
 renderRoleVisibility();
+updateCardLanguageUi();
 initializeCloudAuth();
 
 if ("serviceWorker" in navigator) {

@@ -2020,3 +2020,46 @@ textarea:focus {
         align-items: flex-start;
     }
 }
+
+
+/* =========================
+   V6.4.1 - LANGUE DES CARTES
+   ========================= */
+
+.card-language-setting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(32, 163, 122, 0.055);
+}
+
+.card-language-setting strong,
+.card-language-setting small {
+    display: block;
+}
+
+.card-language-setting small {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.card-language-setting select {
+    flex: 0 0 auto;
+    min-width: 140px;
+}
+
+@media (max-width: 640px) {
+    .card-language-setting {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .card-language-setting select {
+        width: 100%;
+    }
+}

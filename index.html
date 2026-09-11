@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="YGO Coach">
 
-    <title>YGO Coach V6.4</title>
+    <title>YGO Coach V6.4.1</title>
 
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
@@ -807,6 +807,35 @@
                     </button>
                 </div>
 
+                <div class="panel card-language-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Préférences cartes</p>
+                            <h3>Langue de la base TCG</h3>
+                        </div>
+
+                        <span id="card-language-chip" class="panel-chip">FR</span>
+                    </div>
+
+                    <p class="panel-copy">
+                        Les cartes sont identifiées par leur ID officiel : changer de langue ne supprime pas tes decklists.
+                    </p>
+
+                    <div class="card-language-setting">
+                        <div>
+                            <strong>Noms des cartes</strong>
+                            <small>
+                                La recherche, le Deck Builder, le Side rapide et les mains utilisent cette langue.
+                            </small>
+                        </div>
+
+                        <select id="card-language-select" aria-label="Langue des cartes">
+                            <option value="fr">Français</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="panel">
                     <div class="panel-heading">
                         <div>
@@ -899,7 +928,7 @@
                                 <input
                                     id="card-search-input"
                                     type="search"
-                                    placeholder="Ex : Ash Blossom, Dominus..."
+                                    placeholder="Ex : Floraison de Cendres, Dominus..."
                                     autocomplete="off"
                                 >
                             </div>
@@ -952,7 +981,7 @@
                         </div>
 
                         <p class="deck-builder-source">
-                            Données cartes : YGOPRODeck API • cartes sorties en TCG • banlist TCG prise en compte.
+                            Données cartes : YGOPRODeck API • FR / EN • cartes sorties en TCG • banlist TCG prise en compte.
                         </p>
                     </div>
                 </div>

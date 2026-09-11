@@ -214,3 +214,21 @@ git push
 Le service worker utilise maintenant le cache `ygo-coach-v6-4`.
 Les requêtes externes vers l'API de cartes ne sont pas stockées dans le
 cache du service worker ; les cartes utiles sont conservées dans IndexedDB.
+
+
+## V6.4.1 — Base de cartes FR / EN
+
+Aucune migration Supabase n'est nécessaire.
+
+Le choix de langue est enregistré dans le profil et les caches de cartes FR
+et EN sont séparés dans IndexedDB.
+
+Pour publier :
+
+```powershell
+git add .
+git commit -m "YGO Coach V6.4.1 cartes FR EN"
+git push
+```
+
+Le service worker utilise le cache `ygo-coach-v6-4-1`.

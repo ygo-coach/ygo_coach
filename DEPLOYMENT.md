@@ -191,3 +191,26 @@ git push
 ```
 
 Aucune migration n'est nécessaire pour les decks personnels : ils sont stockés dans le JSON du profil existant.
+
+
+## V6.4 — Deck Builder TCG, Side rapide et mains
+
+Aucune nouvelle migration Supabase n'est nécessaire.
+
+Les decklists sont stockées dans le JSON du profil existant et les mains
+dans le JSON des matchs existants.
+
+La base de cartes TCG est fournie par YGOPRODeck et mise en cache dans
+IndexedDB sur chaque appareil.
+
+Pour publier :
+
+```powershell
+git add .
+git commit -m "YGO Coach V6.4 TCG deck builder"
+git push
+```
+
+Le service worker utilise maintenant le cache `ygo-coach-v6-4`.
+Les requêtes externes vers l'API de cartes ne sont pas stockées dans le
+cache du service worker ; les cartes utiles sont conservées dans IndexedDB.

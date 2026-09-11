@@ -1641,3 +1641,382 @@ textarea:focus {
 #opponent-catalog-inline-status.inline-error {
     color: var(--danger);
 }
+
+
+/* =========================
+   V6.4 - DECK BUILDER TCG
+   ========================= */
+
+.deck-library-card {
+    align-items: center;
+}
+
+.deck-build-button {
+    flex: 0 0 auto;
+    border: 1px solid rgba(32, 163, 122, 0.22);
+    border-radius: 12px;
+    background: rgba(32, 163, 122, 0.08);
+    color: var(--primary-strong);
+    padding: 9px 11px;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.deck-builder-panel {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid rgba(32, 163, 122, 0.18);
+    border-radius: 18px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(32, 163, 122, 0.06),
+            rgba(255, 255, 255, 0.96)
+        );
+}
+
+.deck-builder-head,
+.card-database-toolbar,
+.deck-zone-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.deck-builder-head h3 {
+    margin: 2px 0 4px;
+}
+
+.deck-legality {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.deck-legality.legal {
+    color: var(--primary-strong);
+    font-weight: 800;
+}
+
+.deck-legality.illegal {
+    color: #a66f17;
+}
+
+.card-database-toolbar {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(14, 31, 26, 0.05);
+}
+
+.card-database-toolbar strong,
+.card-database-toolbar small {
+    display: block;
+}
+
+.card-database-toolbar small {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.deck-builder-search {
+    display: grid;
+    grid-template-columns: minmax(120px, 0.6fr) minmax(0, 1.4fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.card-search-results {
+    display: grid;
+    gap: 7px;
+    max-height: 340px;
+    overflow-y: auto;
+    margin-top: 10px;
+}
+
+.card-search-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    border: 1px solid rgba(14, 31, 26, 0.09);
+    border-radius: 13px;
+    background: #ffffff;
+    padding: 10px 12px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.card-search-result:hover {
+    border-color: rgba(32, 163, 122, 0.36);
+}
+
+.card-search-result strong,
+.card-search-result small {
+    display: block;
+}
+
+.card-search-result small {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.banlist-pill {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgba(32, 163, 122, 0.10);
+    color: var(--primary-strong);
+    padding: 5px 8px;
+    font-size: 9px;
+    font-weight: 900;
+}
+
+.banlist-pill.forbidden {
+    background: rgba(211, 82, 82, 0.11);
+    color: var(--danger);
+}
+
+.deck-zone-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.deck-zone-card {
+    min-width: 0;
+    border: 1px solid rgba(14, 31, 26, 0.08);
+    border-radius: 16px;
+    background: #ffffff;
+    padding: 12px;
+}
+
+.deck-zone-head {
+    margin-bottom: 10px;
+}
+
+.deck-zone-head strong,
+.deck-zone-label {
+    display: block;
+}
+
+.deck-zone-label {
+    color: var(--primary-strong);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+}
+
+.deck-count-badge {
+    white-space: nowrap;
+    border-radius: 999px;
+    background: rgba(14, 31, 26, 0.06);
+    padding: 5px 8px;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.deck-card-list {
+    display: grid;
+    gap: 7px;
+    max-height: 440px;
+    overflow-y: auto;
+}
+
+.deck-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border-radius: 12px;
+    background: rgba(14, 31, 26, 0.035);
+    padding: 8px;
+}
+
+.deck-card-copy {
+    min-width: 0;
+}
+
+.deck-card-copy strong,
+.deck-card-copy small {
+    display: block;
+}
+
+.deck-card-copy strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11px;
+}
+
+.deck-card-copy small {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 9px;
+}
+
+.deck-card-qty {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.deck-card-qty button {
+    display: grid;
+    place-items: center;
+    width: 25px;
+    height: 25px;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(32, 163, 122, 0.10);
+    color: var(--primary-strong);
+    font: inherit;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.deck-card-qty strong {
+    min-width: 13px;
+    text-align: center;
+    font-size: 11px;
+}
+
+.deck-builder-source {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 10px;
+    text-align: right;
+}
+
+/* =========================
+   V6.4 - SIDE RAPIDE
+   ========================= */
+
+.field-help {
+    display: block;
+    margin: -2px 0 8px;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.side-helper {
+    padding: 11px;
+    border-radius: 14px;
+    background: rgba(32, 163, 122, 0.045);
+}
+
+.side-helper-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.side-helper-grid strong {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 10px;
+    color: var(--muted);
+}
+
+.side-card-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.side-card-chip,
+.hand-card-chip {
+    border: 1px solid rgba(14, 31, 26, 0.10);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--text);
+    padding: 7px 9px;
+    font: inherit;
+    font-size: 9px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.side-card-chip span,
+.hand-card-chip span {
+    margin-left: 4px;
+    opacity: 0.7;
+}
+
+.side-card-chip.selected,
+.hand-card-chip.selected {
+    border-color: rgba(32, 163, 122, 0.38);
+    background: rgba(32, 163, 122, 0.11);
+    color: var(--primary-strong);
+}
+
+.helper-empty {
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+/* =========================
+   V6.4 - MAINS DE DÉPART
+   ========================= */
+
+.opening-hand-field {
+    padding: 11px;
+    border-radius: 14px;
+    background: rgba(216, 180, 92, 0.065);
+}
+
+.hand-card-options {
+    display: grid;
+    gap: 8px;
+}
+
+.hand-picker-counter {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.hand-picker-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+@media (max-width: 900px) {
+    .deck-zone-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .deck-card-list {
+        max-height: 320px;
+    }
+}
+
+@media (max-width: 640px) {
+    .deck-builder-search,
+    .side-helper-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .deck-builder-head,
+    .card-database-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .deck-build-button {
+        margin-left: auto;
+    }
+
+    .card-search-result {
+        align-items: flex-start;
+    }
+}

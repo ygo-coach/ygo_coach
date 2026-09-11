@@ -1,17 +1,8 @@
 /*
-YGO Coach V6 - configuration Supabase
+YGO Coach - configuration Supabase
 
-1. Crée un projet gratuit sur https://supabase.com/
-2. Ouvre Project Settings > API.
-3. Copie :
-   - Project URL
-   - Publishable key (ou anon public key si ton projet affiche encore l'ancien format)
-4. Colle-les ci-dessous.
-
-IMPORTANT :
-- La publishable/anon key est faite pour être utilisée dans une application web.
-- NE METS JAMAIS la clé service_role ici.
-- La sécurité des données est assurée par les règles RLS du fichier supabase-schema.sql.
+La clé ci-dessous est une clé publishable destinée aux applications web.
+Ne jamais placer ici une clé service_role ou sb_secret_...
 */
 
 window.YGO_CONFIG = {

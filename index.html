@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="YGO Coach">
 
-    <title>YGO Coach V6.3</title>
+    <title>YGO Coach V6.4</title>
 
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
@@ -314,6 +314,24 @@
                                 </select>
                             </div>
 
+                            <div class="field-group span-two opening-hand-field">
+                                <label>Main de départ</label>
+                                <small class="field-help">
+                                    Sélectionne jusqu'à 5 cartes de ta main de départ.
+                                </small>
+
+                                <input
+                                    id="g1-opening-hand"
+                                    name="g1OpeningHand"
+                                    type="hidden"
+                                >
+
+                                <div
+                                    id="g1-hand-options"
+                                    class="hand-card-options"
+                                ></div>
+                            </div>
+
                             <div class="field-group span-two">
                                 <label for="g1-note">Note G1</label>
 
@@ -379,6 +397,31 @@
                                     </select>
                                 </div>
 
+                                <div class="field-group span-two side-helper">
+                                    <label>Side rapide</label>
+                                    <small class="field-help">
+                                        Clique sur les cartes de ton Side Deck à rentrer et sur les cartes du Main/Extra à sortir.
+                                    </small>
+
+                                    <div class="side-helper-grid">
+                                        <div>
+                                            <strong>IN — Side Deck</strong>
+                                            <div
+                                                id="g2-side-in-options"
+                                                class="side-card-options"
+                                            ></div>
+                                        </div>
+
+                                        <div>
+                                            <strong>OUT — Main / Extra</strong>
+                                            <div
+                                                id="g2-side-out-options"
+                                                class="side-card-options"
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="field-group">
                                     <label for="g2-side-in">Side IN</label>
 
@@ -399,6 +442,25 @@
                                         placeholder="Cartes sorties..."
                                         disabled
                                     ></textarea>
+                                </div>
+
+                                <div class="field-group span-two opening-hand-field">
+                                    <label>Main de départ</label>
+                                    <small class="field-help">
+                                        Sélectionne jusqu'à 5 cartes réellement piochées.
+                                    </small>
+
+                                    <input
+                                        id="g2-opening-hand"
+                                        name="g2OpeningHand"
+                                        type="hidden"
+                                        disabled
+                                    >
+
+                                    <div
+                                        id="g2-hand-options"
+                                        class="hand-card-options"
+                                    ></div>
                                 </div>
 
                                 <div class="field-group span-two">
@@ -468,6 +530,31 @@
                                     </select>
                                 </div>
 
+                                <div class="field-group span-two side-helper">
+                                    <label>Side rapide</label>
+                                    <small class="field-help">
+                                        Clique sur les cartes de ton Side Deck à rentrer et sur les cartes du Main/Extra à sortir.
+                                    </small>
+
+                                    <div class="side-helper-grid">
+                                        <div>
+                                            <strong>IN — Side Deck</strong>
+                                            <div
+                                                id="g3-side-in-options"
+                                                class="side-card-options"
+                                            ></div>
+                                        </div>
+
+                                        <div>
+                                            <strong>OUT — Main / Extra</strong>
+                                            <div
+                                                id="g3-side-out-options"
+                                                class="side-card-options"
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="field-group">
                                     <label for="g3-side-in">Side IN</label>
 
@@ -488,6 +575,25 @@
                                         placeholder="Cartes sorties..."
                                         disabled
                                     ></textarea>
+                                </div>
+
+                                <div class="field-group span-two opening-hand-field">
+                                    <label>Main de départ</label>
+                                    <small class="field-help">
+                                        Sélectionne jusqu'à 5 cartes réellement piochées.
+                                    </small>
+
+                                    <input
+                                        id="g3-opening-hand"
+                                        name="g3OpeningHand"
+                                        type="hidden"
+                                        disabled
+                                    >
+
+                                    <div
+                                        id="g3-hand-options"
+                                        class="hand-card-options"
+                                    ></div>
                                 </div>
 
                                 <div class="field-group span-two">
@@ -712,7 +818,7 @@
                     </div>
 
                     <p class="panel-copy">
-                        Le deck actif est proposé automatiquement pour une nouvelle ronde. Tous tes decks restent disponibles sous forme de boutons.
+                        Le deck actif est proposé automatiquement pour une nouvelle ronde. Tu peux maintenant construire sa vraie decklist TCG : Main, Extra et Side Deck.
                     </p>
 
                     <div class="active-deck-banner">
@@ -739,6 +845,116 @@
                     </form>
 
                     <div id="my-decks-list" class="deck-library-list"></div>
+
+                    <div id="deck-builder-panel" class="deck-builder-panel hidden">
+                        <div class="deck-builder-head">
+                            <div>
+                                <p class="section-kicker">Deck Builder TCG</p>
+                                <h3 id="deck-builder-name">Mon deck</h3>
+                                <p id="deck-builder-legality" class="deck-legality">
+                                    Construis ton deck.
+                                </p>
+                            </div>
+
+                            <button
+                                id="close-deck-builder"
+                                class="secondary-button small"
+                                type="button"
+                            >
+                                Fermer
+                            </button>
+                        </div>
+
+                        <div class="card-database-toolbar">
+                            <div>
+                                <strong>Base de cartes TCG</strong>
+                                <small id="card-database-status">
+                                    La base se chargera à la première recherche.
+                                </small>
+                            </div>
+
+                            <button
+                                id="refresh-card-database"
+                                class="secondary-button small"
+                                type="button"
+                            >
+                                Mettre à jour
+                            </button>
+                        </div>
+
+                        <div class="deck-builder-search">
+                            <div class="field-group">
+                                <label for="deck-builder-zone">Ajouter dans</label>
+
+                                <select id="deck-builder-zone">
+                                    <option value="mainDeck">Main Deck</option>
+                                    <option value="extraDeck">Extra Deck</option>
+                                    <option value="sideDeck">Side Deck</option>
+                                </select>
+                            </div>
+
+                            <div class="field-group">
+                                <label for="card-search-input">Rechercher une carte TCG</label>
+
+                                <input
+                                    id="card-search-input"
+                                    type="search"
+                                    placeholder="Ex : Ash Blossom, Dominus..."
+                                    autocomplete="off"
+                                >
+                            </div>
+                        </div>
+
+                        <div
+                            id="card-search-results"
+                            class="card-search-results"
+                        ></div>
+
+                        <div class="deck-zone-grid">
+                            <section class="deck-zone-card">
+                                <div class="deck-zone-head">
+                                    <div>
+                                        <span class="deck-zone-label">MAIN</span>
+                                        <strong>Main Deck</strong>
+                                    </div>
+
+                                    <span id="main-deck-count" class="deck-count-badge">0 / 40–60</span>
+                                </div>
+
+                                <div id="main-deck-list" class="deck-card-list"></div>
+                            </section>
+
+                            <section class="deck-zone-card">
+                                <div class="deck-zone-head">
+                                    <div>
+                                        <span class="deck-zone-label">EXTRA</span>
+                                        <strong>Extra Deck</strong>
+                                    </div>
+
+                                    <span id="extra-deck-count" class="deck-count-badge">0 / 15</span>
+                                </div>
+
+                                <div id="extra-deck-list" class="deck-card-list"></div>
+                            </section>
+
+                            <section class="deck-zone-card">
+                                <div class="deck-zone-head">
+                                    <div>
+                                        <span class="deck-zone-label">SIDE</span>
+                                        <strong>Side Deck</strong>
+                                    </div>
+
+                                    <span id="side-deck-count" class="deck-count-badge">0 / 15</span>
+                                </div>
+
+                                <div id="side-deck-list" class="deck-card-list"></div>
+                            </section>
+                        </div>
+
+                        <p class="deck-builder-source">
+                            Données cartes : YGOPRODeck API • cartes sorties en TCG • banlist TCG prise en compte.
+                        </p>
+                    </div>
                 </div>
 
                 <div class="panel shared-catalog-panel">

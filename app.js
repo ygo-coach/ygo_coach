@@ -10,14 +10,15 @@ const STORAGE_KEYS = {
     deletedTournaments: "ygoCoachDeletedTournaments",
     lastCloudSyncAt: "ygoCoachLastCloudSyncAt",
     opponentDeckCatalog: "ygoCoachOpponentDeckCatalog",
-    opponentDeckCatalogRefreshedAt: "ygoCoachOpponentDeckCatalogRefreshedAt"
+    opponentDeckCatalogRefreshedAt: "ygoCoachOpponentDeckCatalogRefreshedAt",
+    cardDatabaseUpdatedAt: "ygoCoachCardDatabaseUpdatedAt"
 };
 
 const LEGACY_STORAGE_KEYS = {
     matches: "ygoMatches"
 };
 
-const APP_VERSION = 6.3;
+const APP_VERSION = 6.4;
 
 const ADMIN_EMAIL = "felixlefevre170@gmail.com";
 
@@ -41,6 +42,14 @@ let lastSuccessfulCloudSync = 0;
 
 const FOREGROUND_SYNC_MIN_INTERVAL = 120000;
 const OPPONENT_CATALOG_TTL = 6 * 60 * 60 * 1000;
+const CARD_DATABASE_TTL = 7 * 24 * 60 * 60 * 1000;
+const CARD_DATABASE_NAME = "ygoCoachCardDatabase";
+const CARD_DATABASE_STORE = "cards";
+
+let cardDatabase = [];
+let cardDatabaseLoadPromise = null;
+let deckBuilderDeckId = null;
+let cardSearchTimer = null;
 
 function generateId() {
     if (
@@ -64,6 +73,100 @@ function normalizeDeckKey(value) {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLocaleLowerCase("fr-FR");
+}
+
+function normalizeDeckCardEntries(items) {
+    const merged = new Map();
+
+    (Array.isArray(items) ? items : [])
+        .forEach((item) => {
+            if (!item) {
+                return;
+            }
+
+            const id = Number(
+                typeof item === "object"
+                    ? item.id
+                    : 0
+            );
+
+            const name = normalizeDeckLabel(
+                typeof item === "string"
+                    ? item
+                    : item.name
+            );
+
+            if (!name) {
+                return;
+            }
+
+            const key =
+                id > 0
+                    ? String(id)
+                    : normalizeDeckKey(name);
+
+            const previous =
+                merged.get(key);
+
+            const qty = Math.max(
+                1,
+                Math.min(
+                    3,
+                    Number(
+                        typeof item === "object"
+                            ? item.qty
+                            : 1
+                    ) || 1
+                )
+            );
+
+            if (previous) {
+                previous.qty = Math.min(
+                    3,
+                    previous.qty + qty
+                );
+
+                return;
+            }
+
+            merged.set(
+                key,
+                {
+                    id:
+                        id > 0
+                            ? id
+                            : key,
+                    name,
+                    type:
+                        typeof item === "object"
+                            ? item.type || ""
+                            : "",
+                    archetype:
+                        typeof item === "object"
+                            ? item.archetype || ""
+                            : "",
+                    banTcg:
+                        typeof item === "object"
+                            ? item.banTcg ||
+                                item.ban_tcg ||
+                                ""
+                            : "",
+                    qty
+                }
+            );
+        });
+
+    return Array.from(
+        merged.values()
+    );
+}
+
+function createEmptyDeckList() {
+    return {
+        mainDeck: [],
+        extraDeck: [],
+        sideDeck: []
+    };
 }
 
 function normalizeProfile(source) {
@@ -101,11 +204,34 @@ function normalizeProfile(source) {
                     ? String(deck.id)
                     : generateId(),
             name,
+            mainDeck:
+                normalizeDeckCardEntries(
+                    typeof deck === "object"
+                        ? deck?.mainDeck
+                        : []
+                ),
+            extraDeck:
+                normalizeDeckCardEntries(
+                    typeof deck === "object"
+                        ? deck?.extraDeck
+                        : []
+                ),
+            sideDeck:
+                normalizeDeckCardEntries(
+                    typeof deck === "object"
+                        ? deck?.sideDeck
+                        : []
+                ),
             createdAt:
                 typeof deck === "object" &&
                 deck?.createdAt
                     ? deck.createdAt
-                    : new Date().toISOString()
+                    : new Date().toISOString(),
+            updatedAt:
+                typeof deck === "object" &&
+                deck?.updatedAt
+                    ? deck.updatedAt
+                    : null
         });
     });
 
@@ -122,7 +248,9 @@ function normalizeProfile(source) {
         const legacyEntry = {
             id: generateId(),
             name: legacyDeck,
-            createdAt: new Date().toISOString()
+            ...createEmptyDeckList(),
+            createdAt: new Date().toISOString(),
+            updatedAt: null
         };
 
         decks.unshift(legacyEntry);
@@ -254,7 +382,10 @@ function ensurePersonalDeck(
         deck = {
             id: generateId(),
             name,
+            ...createEmptyDeckList(),
             createdAt:
+                new Date().toISOString(),
+            updatedAt:
                 new Date().toISOString()
         };
 
@@ -278,6 +409,1958 @@ function ensurePersonalDeck(
     profile.deck = activeDeck.name;
 
     return deck;
+}
+
+function getPersonalDeckById(deckId) {
+    return getMyDecks().find(
+        (deck) =>
+            String(deck.id) ===
+            String(deckId)
+    ) || null;
+}
+
+function getPersonalDeckByName(name) {
+    const key =
+        normalizeDeckKey(name);
+
+    return getMyDecks().find(
+        (deck) =>
+            normalizeDeckKey(deck.name) ===
+            key
+    ) || null;
+}
+
+function isExtraDeckCardType(type) {
+    const normalized =
+        String(type || "")
+            .toLocaleLowerCase("en-US");
+
+    return [
+        "fusion",
+        "synchro",
+        "xyz",
+        "link"
+    ].some(
+        (keyword) =>
+            normalized.includes(keyword)
+    );
+}
+
+function isDeckBuildableCardType(type) {
+    const normalized =
+        String(type || "")
+            .toLocaleLowerCase("en-US");
+
+    return !(
+        normalized.includes("token") ||
+        normalized.includes("skill card")
+    );
+}
+
+function getCardCopyLimit(card) {
+    const status =
+        String(
+            card?.banTcg || ""
+        ).toLocaleLowerCase("en-US");
+
+    if (
+        status.includes("banned") ||
+        status.includes("forbidden")
+    ) {
+        return 0;
+    }
+
+    if (
+        status.includes("semi")
+    ) {
+        return 2;
+    }
+
+    if (
+        status.includes("limited")
+    ) {
+        return 1;
+    }
+
+    return 3;
+}
+
+function getCardBanLabel(card) {
+    const limit =
+        getCardCopyLimit(card);
+
+    if (limit === 0) {
+        return "INTERDITE";
+    }
+
+    if (limit === 1) {
+        return "LIMITÉE";
+    }
+
+    if (limit === 2) {
+        return "SEMI-LIMITÉE";
+    }
+
+    return "×3";
+}
+
+function deckZoneCount(items) {
+    return (Array.isArray(items) ? items : [])
+        .reduce(
+            (total, item) =>
+                total +
+                (Number(item.qty) || 0),
+            0
+        );
+}
+
+function getTotalCardQtyInDeck(
+    deck,
+    cardId
+) {
+    if (!deck) {
+        return 0;
+    }
+
+    return [
+        deck.mainDeck,
+        deck.extraDeck,
+        deck.sideDeck
+    ]
+        .flat()
+        .filter(
+            (item) =>
+                String(item.id) ===
+                String(cardId)
+        )
+        .reduce(
+            (total, item) =>
+                total +
+                (Number(item.qty) || 0),
+            0
+        );
+}
+
+function normalizeCardSearchText(value) {
+    return String(value || "")
+        .normalize("NFD")
+        .replace(
+            /[\u0300-\u036f]/g,
+            ""
+        )
+        .toLocaleLowerCase("fr-FR")
+        .trim();
+}
+
+function openLocalCardDatabase() {
+    return new Promise(
+        (resolve, reject) => {
+            if (!window.indexedDB) {
+                reject(
+                    new Error(
+                        "IndexedDB indisponible."
+                    )
+                );
+
+                return;
+            }
+
+            const request =
+                indexedDB.open(
+                    CARD_DATABASE_NAME,
+                    1
+                );
+
+            request.onupgradeneeded =
+                () => {
+                    const database =
+                        request.result;
+
+                    if (
+                        !database.objectStoreNames
+                            .contains(
+                                CARD_DATABASE_STORE
+                            )
+                    ) {
+                        const store =
+                            database.createObjectStore(
+                                CARD_DATABASE_STORE,
+                                {
+                                    keyPath: "id"
+                                }
+                            );
+
+                        store.createIndex(
+                            "name",
+                            "name",
+                            {
+                                unique: false
+                            }
+                        );
+                    }
+                };
+
+            request.onsuccess =
+                () => resolve(
+                    request.result
+                );
+
+            request.onerror =
+                () => reject(
+                    request.error
+                );
+        }
+    );
+}
+
+async function readCachedCards() {
+    const database =
+        await openLocalCardDatabase();
+
+    return new Promise(
+        (resolve, reject) => {
+            const transaction =
+                database.transaction(
+                    CARD_DATABASE_STORE,
+                    "readonly"
+                );
+
+            const request =
+                transaction
+                    .objectStore(
+                        CARD_DATABASE_STORE
+                    )
+                    .getAll();
+
+            request.onsuccess =
+                () => {
+                    database.close();
+
+                    resolve(
+                        request.result || []
+                    );
+                };
+
+            request.onerror =
+                () => {
+                    database.close();
+
+                    reject(
+                        request.error
+                    );
+                };
+        }
+    );
+}
+
+async function writeCachedCards(cards) {
+    const database =
+        await openLocalCardDatabase();
+
+    return new Promise(
+        (resolve, reject) => {
+            const transaction =
+                database.transaction(
+                    CARD_DATABASE_STORE,
+                    "readwrite"
+                );
+
+            const store =
+                transaction.objectStore(
+                    CARD_DATABASE_STORE
+                );
+
+            store.clear();
+
+            cards.forEach(
+                (card) => {
+                    store.put(card);
+                }
+            );
+
+            transaction.oncomplete =
+                () => {
+                    database.close();
+                    resolve();
+                };
+
+            transaction.onerror =
+                () => {
+                    database.close();
+
+                    reject(
+                        transaction.error
+                    );
+                };
+        }
+    );
+}
+
+function normalizeApiCard(card) {
+    return {
+        id: Number(card.id),
+        name:
+            normalizeDeckLabel(
+                card.name
+            ),
+        type: card.type || "",
+        race: card.race || "",
+        archetype:
+            card.archetype || "",
+        banTcg:
+            card.banlist_info
+                ?.ban_tcg || ""
+    };
+}
+
+function updateCardDatabaseStatus(
+    message,
+    isError = false
+) {
+    const element =
+        document.getElementById(
+            "card-database-status"
+        );
+
+    if (!element) {
+        return;
+    }
+
+    element.textContent =
+        message;
+
+    element.classList.toggle(
+        "inline-error",
+        isError
+    );
+}
+
+async function refreshCardDatabase(
+    force = false
+) {
+    if (
+        cardDatabaseLoadPromise &&
+        !force
+    ) {
+        return cardDatabaseLoadPromise;
+    }
+
+    cardDatabaseLoadPromise =
+        (async () => {
+            const updatedAt =
+                Number(
+                    localStorage.getItem(
+                        STORAGE_KEYS
+                            .cardDatabaseUpdatedAt
+                    ) || 0
+                );
+
+            let cachedCards = [];
+
+            try {
+                cachedCards =
+                    await readCachedCards();
+            } catch (error) {
+                console.warn(
+                    "Cache cartes TCG indisponible",
+                    error
+                );
+            }
+
+            if (
+                !force &&
+                cachedCards.length > 0
+            ) {
+                cardDatabase =
+                    cachedCards;
+
+                const age =
+                    Date.now() -
+                    updatedAt;
+
+                if (
+                    age <
+                    CARD_DATABASE_TTL ||
+                    !navigator.onLine
+                ) {
+                    updateCardDatabaseStatus(
+                        `${cardDatabase.length} cartes TCG en cache.`
+                    );
+
+                    return cardDatabase;
+                }
+            }
+
+            if (!navigator.onLine) {
+                if (
+                    cardDatabase.length === 0
+                ) {
+                    updateCardDatabaseStatus(
+                        "Aucune base de cartes hors ligne. Connecte-toi une première fois.",
+                        true
+                    );
+                }
+
+                return cardDatabase;
+            }
+
+            updateCardDatabaseStatus(
+                "Mise à jour de la base TCG…"
+            );
+
+            const response =
+                await fetch(
+                    "https://db.ygoprodeck.com/api/v7/cardinfo.php?format=tcg"
+                );
+
+            if (!response.ok) {
+                throw new Error(
+                    `YGOPRODeck HTTP ${response.status}`
+                );
+            }
+
+            const payload =
+                await response.json();
+
+            const cards =
+                Array.isArray(
+                    payload?.data
+                )
+                    ? payload.data
+                        .map(
+                            normalizeApiCard
+                        )
+                        .filter(
+                            (card) =>
+                                card.id &&
+                                card.name &&
+                                isDeckBuildableCardType(
+                                    card.type
+                                )
+                        )
+                        .sort(
+                            (a, b) =>
+                                a.name.localeCompare(
+                                    b.name,
+                                    "en",
+                                    {
+                                        sensitivity:
+                                            "base"
+                                    }
+                                )
+                        )
+                    : [];
+
+            if (
+                cards.length === 0
+            ) {
+                throw new Error(
+                    "La base TCG reçue est vide."
+                );
+            }
+
+            cardDatabase =
+                cards;
+
+            try {
+                await writeCachedCards(
+                    cards
+                );
+
+                localStorage.setItem(
+                    STORAGE_KEYS
+                        .cardDatabaseUpdatedAt,
+                    String(Date.now())
+                );
+            } catch (error) {
+                console.warn(
+                    "Impossible de mettre en cache les cartes",
+                    error
+                );
+            }
+
+            updateCardDatabaseStatus(
+                `${cards.length} cartes TCG à jour.`
+            );
+
+            return cards;
+        })()
+            .catch(
+                (error) => {
+                    console.error(
+                        "Base YGOPRODeck",
+                        error
+                    );
+
+                    updateCardDatabaseStatus(
+                        cardDatabase.length > 0
+                            ? `Mise à jour impossible. ${cardDatabase.length} cartes restent disponibles en cache.`
+                            : "Impossible de charger la base de cartes TCG.",
+                        true
+                    );
+
+                    return cardDatabase;
+                }
+            )
+            .finally(
+                () => {
+                    cardDatabaseLoadPromise =
+                        null;
+                }
+            );
+
+    return cardDatabaseLoadPromise;
+}
+
+function getDeckBuilderDeck() {
+    return getPersonalDeckById(
+        deckBuilderDeckId
+    );
+}
+
+function openDeckBuilder(deckId) {
+    const deck =
+        getPersonalDeckById(
+            deckId
+        );
+
+    if (!deck) {
+        return;
+    }
+
+    deckBuilderDeckId =
+        deck.id;
+
+    const panel =
+        document.getElementById(
+            "deck-builder-panel"
+        );
+
+    panel?.classList.remove(
+        "hidden"
+    );
+
+    renderDeckBuilder();
+
+    refreshCardDatabase()
+        .then(
+            () => {
+                renderCardSearchResults();
+            }
+        );
+
+    window.setTimeout(
+        () => {
+            panel?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        },
+        80
+    );
+}
+
+function closeDeckBuilder() {
+    deckBuilderDeckId =
+        null;
+
+    document
+        .getElementById(
+            "deck-builder-panel"
+        )
+        ?.classList.add(
+            "hidden"
+        );
+
+    const results =
+        document.getElementById(
+            "card-search-results"
+        );
+
+    if (results) {
+        results.innerHTML = "";
+    }
+}
+
+function getDeckValidation(deck) {
+    if (!deck) {
+        return {
+            legal: false,
+            messages: [
+                "Aucun deck sélectionné."
+            ]
+        };
+    }
+
+    const messages = [];
+
+    const mainCount =
+        deckZoneCount(
+            deck.mainDeck
+        );
+
+    const extraCount =
+        deckZoneCount(
+            deck.extraDeck
+        );
+
+    const sideCount =
+        deckZoneCount(
+            deck.sideDeck
+        );
+
+    if (
+        mainCount < 40 ||
+        mainCount > 60
+    ) {
+        messages.push(
+            `Main Deck : ${mainCount}/40–60`
+        );
+    }
+
+    if (extraCount > 15) {
+        messages.push(
+            `Extra Deck : ${extraCount}/15`
+        );
+    }
+
+    if (sideCount > 15) {
+        messages.push(
+            `Side Deck : ${sideCount}/15`
+        );
+    }
+
+    const allCards = [
+        ...deck.mainDeck,
+        ...deck.extraDeck,
+        ...deck.sideDeck
+    ];
+
+    const uniqueIds =
+        Array.from(
+            new Set(
+                allCards.map(
+                    (card) =>
+                        String(card.id)
+                )
+            )
+        );
+
+    uniqueIds.forEach(
+        (cardId) => {
+            const card =
+                allCards.find(
+                    (item) =>
+                        String(item.id) ===
+                        cardId
+                );
+
+            const qty =
+                getTotalCardQtyInDeck(
+                    deck,
+                    cardId
+                );
+
+            const limit =
+                getCardCopyLimit(
+                    card
+                );
+
+            if (qty > limit) {
+                messages.push(
+                    `${card.name} : ${qty}/${limit}`
+                );
+            }
+        }
+    );
+
+    deck.mainDeck.forEach(
+        (card) => {
+            if (
+                isExtraDeckCardType(
+                    card.type
+                )
+            ) {
+                messages.push(
+                    `${card.name} doit être dans l'Extra Deck.`
+                );
+            }
+        }
+    );
+
+    deck.extraDeck.forEach(
+        (card) => {
+            if (
+                !isExtraDeckCardType(
+                    card.type
+                )
+            ) {
+                messages.push(
+                    `${card.name} ne peut pas être dans l'Extra Deck.`
+                );
+            }
+        }
+    );
+
+    return {
+        legal:
+            messages.length === 0,
+        messages
+    };
+}
+
+function renderDeckBuilder() {
+    const deck =
+        getDeckBuilderDeck();
+
+    const panel =
+        document.getElementById(
+            "deck-builder-panel"
+        );
+
+    if (
+        !panel ||
+        !deck
+    ) {
+        panel?.classList.add(
+            "hidden"
+        );
+
+        return;
+    }
+
+    panel.classList.remove(
+        "hidden"
+    );
+
+    document.getElementById(
+        "deck-builder-name"
+    ).textContent =
+        deck.name;
+
+    const mainCount =
+        deckZoneCount(
+            deck.mainDeck
+        );
+
+    const extraCount =
+        deckZoneCount(
+            deck.extraDeck
+        );
+
+    const sideCount =
+        deckZoneCount(
+            deck.sideDeck
+        );
+
+    document.getElementById(
+        "main-deck-count"
+    ).textContent =
+        `${mainCount} / 40–60`;
+
+    document.getElementById(
+        "extra-deck-count"
+    ).textContent =
+        `${extraCount} / 15`;
+
+    document.getElementById(
+        "side-deck-count"
+    ).textContent =
+        `${sideCount} / 15`;
+
+    renderDeckZone(
+        "main-deck-list",
+        deck.mainDeck,
+        "mainDeck"
+    );
+
+    renderDeckZone(
+        "extra-deck-list",
+        deck.extraDeck,
+        "extraDeck"
+    );
+
+    renderDeckZone(
+        "side-deck-list",
+        deck.sideDeck,
+        "sideDeck"
+    );
+
+    const validation =
+        getDeckValidation(deck);
+
+    const legality =
+        document.getElementById(
+            "deck-builder-legality"
+        );
+
+    if (validation.legal) {
+        legality.textContent =
+            `Deck prêt • ${mainCount} Main • ${extraCount} Extra • ${sideCount} Side`;
+
+        legality.classList.add(
+            "legal"
+        );
+
+        legality.classList.remove(
+            "illegal"
+        );
+    } else {
+        legality.textContent =
+            validation.messages
+                .slice(0, 3)
+                .join(" • ");
+
+        legality.classList.add(
+            "illegal"
+        );
+
+        legality.classList.remove(
+            "legal"
+        );
+    }
+
+    renderDuelDeckHelpers();
+}
+
+function renderDeckZone(
+    elementId,
+    cards,
+    zone
+) {
+    const container =
+        document.getElementById(
+            elementId
+        );
+
+    if (!container) {
+        return;
+    }
+
+    if (
+        !Array.isArray(cards) ||
+        cards.length === 0
+    ) {
+        container.innerHTML = `
+            <div class="empty-state compact-empty-state">
+                Aucune carte.
+            </div>
+        `;
+
+        return;
+    }
+
+    container.innerHTML =
+        cards
+            .slice()
+            .sort(
+                (a, b) =>
+                    a.name.localeCompare(
+                        b.name,
+                        "en",
+                        {
+                            sensitivity:
+                                "base"
+                        }
+                    )
+            )
+            .map(
+                (card) => `
+                    <article class="deck-card-row">
+                        <div class="deck-card-copy">
+                            <strong>${escapeHtml(card.name)}</strong>
+                            <small>
+                                ${escapeHtml(card.type || "Carte")}
+                                ${card.banTcg ? ` • ${escapeHtml(getCardBanLabel(card))}` : ""}
+                            </small>
+                        </div>
+
+                        <div class="deck-card-qty">
+                            <button
+                                type="button"
+                                data-deck-card-action="minus"
+                                data-zone="${escapeHtml(zone)}"
+                                data-card-id="${escapeHtml(card.id)}"
+                                aria-label="Retirer une copie"
+                            >
+                                −
+                            </button>
+
+                            <strong>${Number(card.qty) || 1}</strong>
+
+                            <button
+                                type="button"
+                                data-deck-card-action="plus"
+                                data-zone="${escapeHtml(zone)}"
+                                data-card-id="${escapeHtml(card.id)}"
+                                aria-label="Ajouter une copie"
+                            >
+                                +
+                            </button>
+                        </div>
+                    </article>
+                `
+            )
+            .join("");
+}
+
+function renderCardSearchResults() {
+    const results =
+        document.getElementById(
+            "card-search-results"
+        );
+
+    const input =
+        document.getElementById(
+            "card-search-input"
+        );
+
+    if (
+        !results ||
+        !input
+    ) {
+        return;
+    }
+
+    const query =
+        normalizeCardSearchText(
+            input.value
+        );
+
+    if (query.length < 2) {
+        results.innerHTML = "";
+
+        return;
+    }
+
+    if (
+        cardDatabase.length === 0
+    ) {
+        results.innerHTML = `
+            <div class="empty-state compact-empty-state">
+                Chargement de la base TCG…
+            </div>
+        `;
+
+        refreshCardDatabase()
+            .then(
+                renderCardSearchResults
+            );
+
+        return;
+    }
+
+    const matches =
+        cardDatabase
+            .filter(
+                (card) =>
+                    normalizeCardSearchText(
+                        card.name
+                    )
+                        .includes(query)
+            )
+            .sort(
+                (a, b) => {
+                    const aName =
+                        normalizeCardSearchText(
+                            a.name
+                        );
+
+                    const bName =
+                        normalizeCardSearchText(
+                            b.name
+                        );
+
+                    const aStarts =
+                        aName.startsWith(
+                            query
+                        );
+
+                    const bStarts =
+                        bName.startsWith(
+                            query
+                        );
+
+                    if (
+                        aStarts !== bStarts
+                    ) {
+                        return aStarts
+                            ? -1
+                            : 1;
+                    }
+
+                    return a.name.localeCompare(
+                        b.name,
+                        "en"
+                    );
+                }
+            )
+            .slice(0, 12);
+
+    if (matches.length === 0) {
+        results.innerHTML = `
+            <div class="empty-state compact-empty-state">
+                Aucune carte TCG trouvée.
+            </div>
+        `;
+
+        return;
+    }
+
+    results.innerHTML =
+        matches
+            .map(
+                (card) => `
+                    <button
+                        type="button"
+                        class="card-search-result"
+                        data-add-card-id="${escapeHtml(card.id)}"
+                    >
+                        <span>
+                            <strong>${escapeHtml(card.name)}</strong>
+                            <small>
+                                ${escapeHtml(card.type || "Carte")}
+                                ${card.archetype ? ` • ${escapeHtml(card.archetype)}` : ""}
+                            </small>
+                        </span>
+
+                        <span class="banlist-pill ${getCardCopyLimit(card) === 0 ? "forbidden" : ""}">
+                            ${escapeHtml(getCardBanLabel(card))}
+                        </span>
+                    </button>
+                `
+            )
+            .join("");
+}
+
+function saveDeckBuilderChange(deck) {
+    if (!deck) {
+        return;
+    }
+
+    deck.updatedAt =
+        new Date().toISOString();
+
+    profile.updatedAt =
+        deck.updatedAt;
+
+    saveAll();
+    markProfileDirty();
+
+    renderDeckBuilder();
+    renderMyDeckLibrary();
+    renderMyDeckChoices();
+}
+
+function addCardToDeckBuilder(
+    cardId
+) {
+    const deck =
+        getDeckBuilderDeck();
+
+    const zone =
+        document.getElementById(
+            "deck-builder-zone"
+        )?.value || "mainDeck";
+
+    const card =
+        cardDatabase.find(
+            (item) =>
+                String(item.id) ===
+                String(cardId)
+        );
+
+    if (
+        !deck ||
+        !card
+    ) {
+        return;
+    }
+
+    const copyLimit =
+        getCardCopyLimit(card);
+
+    if (copyLimit === 0) {
+        window.alert(
+            `${card.name} est interdite sur la banlist TCG actuelle.`
+        );
+
+        return;
+    }
+
+    if (
+        zone === "extraDeck" &&
+        !isExtraDeckCardType(
+            card.type
+        )
+    ) {
+        window.alert(
+            `${card.name} n'est pas une carte d'Extra Deck.`
+        );
+
+        return;
+    }
+
+    if (
+        zone === "mainDeck" &&
+        isExtraDeckCardType(
+            card.type
+        )
+    ) {
+        window.alert(
+            `${card.name} doit être ajoutée dans l'Extra Deck ou le Side Deck.`
+        );
+
+        return;
+    }
+
+    const zoneLimit =
+        zone === "mainDeck"
+            ? 60
+            : 15;
+
+    if (
+        deckZoneCount(
+            deck[zone]
+        ) >= zoneLimit
+    ) {
+        window.alert(
+            zone === "mainDeck"
+                ? "Le Main Deck ne peut pas dépasser 60 cartes."
+                : "Cette zone ne peut pas dépasser 15 cartes."
+        );
+
+        return;
+    }
+
+    const currentTotal =
+        getTotalCardQtyInDeck(
+            deck,
+            card.id
+        );
+
+    if (
+        currentTotal >=
+        copyLimit
+    ) {
+        window.alert(
+            `${card.name} est limitée à ${copyLimit} exemplaire${copyLimit > 1 ? "s" : ""} au total.`
+        );
+
+        return;
+    }
+
+    const existing =
+        deck[zone].find(
+            (item) =>
+                String(item.id) ===
+                String(card.id)
+        );
+
+    if (existing) {
+        existing.qty += 1;
+    } else {
+        deck[zone].push({
+            ...card,
+            qty: 1
+        });
+    }
+
+    saveDeckBuilderChange(
+        deck
+    );
+}
+
+function changeDeckCardQuantity(
+    zone,
+    cardId,
+    delta
+) {
+    const deck =
+        getDeckBuilderDeck();
+
+    if (
+        !deck ||
+        !Array.isArray(
+            deck[zone]
+        )
+    ) {
+        return;
+    }
+
+    const card =
+        deck[zone].find(
+            (item) =>
+                String(item.id) ===
+                String(cardId)
+        );
+
+    if (!card) {
+        return;
+    }
+
+    if (delta > 0) {
+        const copyLimit =
+            getCardCopyLimit(
+                card
+            );
+
+        const zoneLimit =
+            zone === "mainDeck"
+                ? 60
+                : 15;
+
+        if (
+            deckZoneCount(
+                deck[zone]
+            ) >= zoneLimit
+        ) {
+            return;
+        }
+
+        if (
+            getTotalCardQtyInDeck(
+                deck,
+                card.id
+            ) >= copyLimit
+        ) {
+            return;
+        }
+
+        card.qty += 1;
+    } else {
+        card.qty -= 1;
+
+        if (card.qty <= 0) {
+            deck[zone] =
+                deck[zone].filter(
+                    (item) =>
+                        String(item.id) !==
+                        String(cardId)
+                );
+        }
+    }
+
+    saveDeckBuilderChange(
+        deck
+    );
+}
+
+function getCurrentMatchDeck() {
+    const name =
+        document.getElementById(
+            "my-deck"
+        )?.value || "";
+
+    return getPersonalDeckByName(
+        name
+    );
+}
+
+function countNames(items) {
+    const counts =
+        new Map();
+
+    (Array.isArray(items) ? items : [])
+        .forEach(
+            (name) => {
+                const key =
+                    normalizeDeckKey(
+                        name
+                    );
+
+                counts.set(
+                    key,
+                    (counts.get(key) || 0) +
+                        1
+                );
+            }
+        );
+
+    return counts;
+}
+
+function buildRepeatedNames(
+    existingNames,
+    cardName,
+    maxQty
+) {
+    const current =
+        Array.isArray(existingNames)
+            ? existingNames
+            : [];
+
+    const key =
+        normalizeDeckKey(
+            cardName
+        );
+
+    const sameCount =
+        current.filter(
+            (name) =>
+                normalizeDeckKey(
+                    name
+                ) === key
+        ).length;
+
+    const without =
+        current.filter(
+            (name) =>
+                normalizeDeckKey(
+                    name
+                ) !== key
+        );
+
+    const nextQty =
+        sameCount >= maxQty
+            ? 0
+            : sameCount + 1;
+
+    for (
+        let index = 0;
+        index < nextQty;
+        index += 1
+    ) {
+        without.push(
+            cardName
+        );
+    }
+
+    return without;
+}
+
+function getSideSourceCards(
+    deck,
+    direction
+) {
+    if (!deck) {
+        return [];
+    }
+
+    const source =
+        direction === "in"
+            ? deck.sideDeck
+            : [
+                ...deck.mainDeck,
+                ...deck.extraDeck
+            ];
+
+    const merged =
+        new Map();
+
+    source.forEach(
+        (card) => {
+            const key =
+                String(card.id);
+
+            if (
+                merged.has(key)
+            ) {
+                merged.get(key).qty +=
+                    Number(card.qty) || 0;
+            } else {
+                merged.set(
+                    key,
+                    {
+                        ...card,
+                        qty:
+                            Number(card.qty) || 1
+                    }
+                );
+            }
+        }
+    );
+
+    return Array.from(
+        merged.values()
+    );
+}
+
+function renderSideAssistant(
+    gameNumber
+) {
+    const deck =
+        getCurrentMatchDeck();
+
+    ["in", "out"].forEach(
+        (direction) => {
+            const container =
+                document.getElementById(
+                    `g${gameNumber}-side-${direction}-options`
+                );
+
+            const textarea =
+                document.getElementById(
+                    `g${gameNumber}-side-${direction}`
+                );
+
+            if (
+                !container ||
+                !textarea
+            ) {
+                return;
+            }
+
+            if (!deck) {
+                container.innerHTML = `
+                    <span class="helper-empty">
+                        Construis ce deck dans Profil pour utiliser le side rapide.
+                    </span>
+                `;
+
+                return;
+            }
+
+            const cards =
+                getSideSourceCards(
+                    deck,
+                    direction
+                );
+
+            if (
+                cards.length === 0
+            ) {
+                container.innerHTML = `
+                    <span class="helper-empty">
+                        Aucune carte disponible.
+                    </span>
+                `;
+
+                return;
+            }
+
+            const selected =
+                countNames(
+                    parseCardList(
+                        textarea.value
+                    )
+                );
+
+            container.innerHTML =
+                cards
+                    .slice()
+                    .sort(
+                        (a, b) =>
+                            a.name.localeCompare(
+                                b.name,
+                                "en"
+                            )
+                    )
+                    .map(
+                        (card) => {
+                            const qty =
+                                selected.get(
+                                    normalizeDeckKey(
+                                        card.name
+                                    )
+                                ) || 0;
+
+                            return `
+                                <button
+                                    type="button"
+                                    class="side-card-chip ${qty > 0 ? "selected" : ""}"
+                                    data-side-game="${gameNumber}"
+                                    data-side-direction="${direction}"
+                                    data-side-card-id="${escapeHtml(card.id)}"
+                                >
+                                    ${escapeHtml(card.name)}
+                                    <span>${qty > 0 ? `×${qty}` : `0/${card.qty}`}</span>
+                                </button>
+                            `;
+                        }
+                    )
+                    .join("");
+        }
+    );
+}
+
+function getEffectiveMainDeckForGame(
+    gameNumber
+) {
+    const deck =
+        getCurrentMatchDeck();
+
+    if (!deck) {
+        return [];
+    }
+
+    const map =
+        new Map();
+
+    deck.mainDeck.forEach(
+        (card) => {
+            map.set(
+                normalizeDeckKey(
+                    card.name
+                ),
+                {
+                    ...card,
+                    qty:
+                        Number(card.qty) || 1
+                }
+            );
+        }
+    );
+
+    if (
+        gameNumber >= 2
+    ) {
+        const sideOut =
+            parseCardList(
+                document.getElementById(
+                    `g${gameNumber}-side-out`
+                )?.value || ""
+            );
+
+        const sideIn =
+            parseCardList(
+                document.getElementById(
+                    `g${gameNumber}-side-in`
+                )?.value || ""
+            );
+
+        sideOut.forEach(
+            (name) => {
+                const key =
+                    normalizeDeckKey(
+                        name
+                    );
+
+                const card =
+                    map.get(key);
+
+                if (!card) {
+                    return;
+                }
+
+                card.qty -= 1;
+
+                if (
+                    card.qty <= 0
+                ) {
+                    map.delete(key);
+                }
+            }
+        );
+
+        sideIn.forEach(
+            (name) => {
+                const sourceCard =
+                    deck.sideDeck.find(
+                        (card) =>
+                            normalizeDeckKey(
+                                card.name
+                            ) ===
+                            normalizeDeckKey(
+                                name
+                            )
+                    );
+
+                if (
+                    !sourceCard ||
+                    isExtraDeckCardType(
+                        sourceCard.type
+                    )
+                ) {
+                    return;
+                }
+
+                const key =
+                    normalizeDeckKey(
+                        sourceCard.name
+                    );
+
+                const existing =
+                    map.get(key);
+
+                if (existing) {
+                    existing.qty += 1;
+                } else {
+                    map.set(
+                        key,
+                        {
+                            ...sourceCard,
+                            qty: 1
+                        }
+                    );
+                }
+            }
+        );
+    }
+
+    return Array.from(
+        map.values()
+    );
+}
+
+function renderOpeningHandPicker(
+    gameNumber
+) {
+    const container =
+        document.getElementById(
+            `g${gameNumber}-hand-options`
+        );
+
+    const input =
+        document.getElementById(
+            `g${gameNumber}-opening-hand`
+        );
+
+    if (
+        !container ||
+        !input
+    ) {
+        return;
+    }
+
+    const cards =
+        getEffectiveMainDeckForGame(
+            gameNumber
+        );
+
+    if (
+        cards.length === 0
+    ) {
+        container.innerHTML = `
+            <span class="helper-empty">
+                Construis le Main Deck dans Profil pour saisir la main par clic.
+            </span>
+        `;
+
+        return;
+    }
+
+    const selectedNames =
+        parseCardList(
+            input.value
+        );
+
+    const selected =
+        countNames(
+            selectedNames
+        );
+
+    const totalSelected =
+        selectedNames.length;
+
+    container.innerHTML = `
+        <div class="hand-picker-counter">
+            ${totalSelected} / 5 cartes
+        </div>
+
+        <div class="hand-picker-chips">
+            ${cards
+                .slice()
+                .sort(
+                    (a, b) =>
+                        a.name.localeCompare(
+                            b.name,
+                            "en"
+                        )
+                )
+                .map(
+                    (card) => {
+                        const qty =
+                            selected.get(
+                                normalizeDeckKey(
+                                    card.name
+                                )
+                            ) || 0;
+
+                        return `
+                            <button
+                                type="button"
+                                class="hand-card-chip ${qty > 0 ? "selected" : ""}"
+                                data-hand-game="${gameNumber}"
+                                data-hand-card-id="${escapeHtml(card.id)}"
+                            >
+                                ${escapeHtml(card.name)}
+                                <span>${qty > 0 ? `×${qty}` : ""}</span>
+                            </button>
+                        `;
+                    }
+                )
+                .join("")}
+        </div>
+    `;
+}
+
+function renderDuelDeckHelpers() {
+    renderSideAssistant(2);
+    renderSideAssistant(3);
+
+    renderOpeningHandPicker(1);
+    renderOpeningHandPicker(2);
+    renderOpeningHandPicker(3);
+}
+
+function cycleSideCardSelection(
+    gameNumber,
+    direction,
+    cardId
+) {
+    const deck =
+        getCurrentMatchDeck();
+
+    if (!deck) {
+        return;
+    }
+
+    const card =
+        getSideSourceCards(
+            deck,
+            direction
+        ).find(
+            (item) =>
+                String(item.id) ===
+                String(cardId)
+        );
+
+    const textarea =
+        document.getElementById(
+            `g${gameNumber}-side-${direction}`
+        );
+
+    if (
+        !card ||
+        !textarea
+    ) {
+        return;
+    }
+
+    const current =
+        parseCardList(
+            textarea.value
+        );
+
+    const next =
+        buildRepeatedNames(
+            current,
+            card.name,
+            Number(card.qty) || 1
+        );
+
+    textarea.value =
+        next.join("; ");
+
+    renderSideAssistant(
+        gameNumber
+    );
+
+    renderOpeningHandPicker(
+        gameNumber
+    );
+}
+
+function cycleOpeningHandCard(
+    gameNumber,
+    cardId
+) {
+    const input =
+        document.getElementById(
+            `g${gameNumber}-opening-hand`
+        );
+
+    if (!input) {
+        return;
+    }
+
+    const cards =
+        getEffectiveMainDeckForGame(
+            gameNumber
+        );
+
+    const card =
+        cards.find(
+            (item) =>
+                String(item.id) ===
+                String(cardId)
+        );
+
+    if (!card) {
+        return;
+    }
+
+    const current =
+        parseCardList(
+            input.value
+        );
+
+    const key =
+        normalizeDeckKey(
+            card.name
+        );
+
+    const currentQty =
+        current.filter(
+            (name) =>
+                normalizeDeckKey(
+                    name
+                ) === key
+        ).length;
+
+    const without =
+        current.filter(
+            (name) =>
+                normalizeDeckKey(
+                    name
+                ) !== key
+        );
+
+    let nextQty =
+        currentQty + 1;
+
+    if (
+        current.length >= 5 &&
+        currentQty > 0
+    ) {
+        nextQty = 0;
+    } else if (
+        current.length >= 5
+    ) {
+        return;
+    } else if (
+        nextQty >
+        (Number(card.qty) || 1)
+    ) {
+        nextQty = 0;
+    }
+
+    const next = [
+        ...without
+    ];
+
+    for (
+        let index = 0;
+        index < nextQty;
+        index += 1
+    ) {
+        if (
+            next.length >= 5
+        ) {
+            break;
+        }
+
+        next.push(
+            card.name
+        );
+    }
+
+    input.value =
+        next.join("; ");
+
+    renderOpeningHandPicker(
+        gameNumber
+    );
+}
+
+function buildOpeningHandInsight(
+    allGames
+) {
+    const firstGames =
+        allGames.filter(
+            (game) =>
+                game.position === "first" &&
+                Array.isArray(
+                    game.openingHand
+                ) &&
+                game.openingHand.length >= 5 &&
+                (
+                    game.result === "win" ||
+                    game.result === "loss"
+                )
+        );
+
+    if (
+        firstGames.length < 5
+    ) {
+        return "";
+    }
+
+    const stats =
+        new Map();
+
+    firstGames.forEach(
+        (game) => {
+            const uniqueCards =
+                Array.from(
+                    new Set(
+                        game.openingHand.map(
+                            normalizeDeckKey
+                        )
+                    )
+                );
+
+            uniqueCards.forEach(
+                (key) => {
+                    if (
+                        !stats.has(key)
+                    ) {
+                        stats.set(
+                            key,
+                            {
+                                name:
+                                    game.openingHand.find(
+                                        (name) =>
+                                            normalizeDeckKey(
+                                                name
+                                            ) === key
+                                    ),
+                                games: 0,
+                                wins: 0
+                            }
+                        );
+                    }
+
+                    const item =
+                        stats.get(key);
+
+                    item.games += 1;
+
+                    if (
+                        game.result === "win"
+                    ) {
+                        item.wins += 1;
+                    }
+                }
+            );
+        }
+    );
+
+    const candidates =
+        Array.from(
+            stats.values()
+        )
+            .filter(
+                (item) =>
+                    item.games >= 3
+            )
+            .map(
+                (item) => ({
+                    ...item,
+                    winrate:
+                        percentage(
+                            item.wins,
+                            item.games
+                        )
+                })
+            )
+            .sort(
+                (a, b) =>
+                    b.winrate -
+                    a.winrate ||
+                    b.games -
+                    a.games
+            );
+
+    const best =
+        candidates[0];
+
+    if (!best) {
+        return "";
+    }
+
+    return `Main de départ : en commençant, tes meilleurs résultats observés sont avec ${best.name} en main (${best.winrate} % sur ${best.games} games). Continue d'enregistrer tes mains pour fiabiliser l'analyse.`;
 }
 
 function saveOpponentDeckCatalog() {
@@ -410,6 +2493,12 @@ function normalizeGames(games) {
             sideOut: Array.isArray(game.sideOut)
                 ? game.sideOut
                 : parseCardList(game.sideOut || ""),
+            openingHand:
+                Array.isArray(game.openingHand)
+                    ? game.openingHand
+                    : parseCardList(
+                        game.openingHand || ""
+                    ),
             note: game.note || ""
         }));
 }
@@ -432,9 +2521,25 @@ function saveAll() {
 }
 
 function parseCardList(value) {
-    return String(value || "")
-        .split(/[,;\n]/)
-        .map((item) => item.trim())
+    const text =
+        String(value || "")
+            .trim();
+
+    if (!text) {
+        return [];
+    }
+
+    const separator =
+        /[;\n]/.test(text)
+            ? /[;\n]/
+            : /,/;
+
+    return text
+        .split(separator)
+        .map(
+            (item) =>
+                item.trim()
+        )
         .filter(Boolean);
 }
 
@@ -543,6 +2648,7 @@ function goToPage(pageName) {
         }
 
         renderMyDeckChoices();
+        renderDuelDeckHelpers();
     }
 
     if (pageName === "profile") {
@@ -2150,6 +4256,15 @@ function buildCoachMessage() {
 
     const allGames = getAllGames();
 
+    const openingHandInsight =
+        buildOpeningHandInsight(
+            allGames
+        );
+
+    if (openingHandInsight) {
+        return openingHandInsight;
+    }
+
     if (allGames.length >= 6) {
         const firstGames = allGames.filter(
             (game) => game.position === "first"
@@ -2252,7 +4367,8 @@ function matchCardTemplate(match) {
                 game.result ||
                 game.note ||
                 game.sideIn.length ||
-                game.sideOut.length
+                game.sideOut.length ||
+                game.openingHand.length
         )
         .map((game) => {
             const gameClass =
@@ -2274,6 +4390,15 @@ function matchCardTemplate(match) {
                     `
                     : "";
 
+            const handText =
+                game.openingHand.length
+                    ? `
+                        <div class="side-line opening-hand-summary">
+                            Main : ${escapeHtml(game.openingHand.join(" • "))}
+                        </div>
+                    `
+                    : "";
+
             return `
                 <div class="game-summary-row ${gameClass}">
                     <span>G${game.number}</span>
@@ -2285,6 +4410,7 @@ function matchCardTemplate(match) {
                     <div>
                         ${escapeHtml(positionLabel(game.position))}
                         ${sideText}
+                        ${handText}
                     </div>
                 </div>
             `;
@@ -2868,6 +4994,8 @@ function renderProfile() {
     renderMyDeckLibrary();
     renderMyDeckChoices();
     renderOpponentCatalogSummary();
+    renderDeckBuilder();
+    renderDuelDeckHelpers();
 }
 
 function renderMyDeckLibrary() {
@@ -2932,10 +5060,22 @@ function renderMyDeckLibrary() {
 
                         <span>
                             <strong>${escapeHtml(deck.name)}</strong>
-                            <small>${isActive ? "Deck actif • proposé par défaut" : "Utiliser par défaut"}</small>
+                            <small>
+                                ${deckZoneCount(deck.mainDeck)} Main •
+                                ${deckZoneCount(deck.extraDeck)} Extra •
+                                ${deckZoneCount(deck.sideDeck)} Side
+                            </small>
                         </span>
 
                         ${isActive ? '<span class="active-deck-badge">ACTIF</span>' : ''}
+                    </button>
+
+                    <button
+                        class="deck-build-button"
+                        type="button"
+                        data-build-personal-deck="${escapeHtml(deck.id)}"
+                    >
+                        Construire
                     </button>
 
                     <button
@@ -3420,6 +5560,7 @@ function startEditingMatch(matchId) {
     ).classList.remove("hidden");
 
     goToPage("add");
+    renderDuelDeckHelpers();
 }
 
 function setGameFormValues(
@@ -3470,11 +5611,21 @@ function setGameFormValues(
     if (number >= 2) {
         document.getElementById(
             `g${number}-side-in`
-        ).value = game?.sideIn?.join(", ") || "";
+        ).value = game?.sideIn?.join("; ") || "";
 
         document.getElementById(
             `g${number}-side-out`
-        ).value = game?.sideOut?.join(", ") || "";
+        ).value = game?.sideOut?.join("; ") || "";
+    }
+
+    const openingHandInput =
+        document.getElementById(
+            `g${number}-opening-hand`
+        );
+
+    if (openingHandInput) {
+        openingHandInput.value =
+            game?.openingHand?.join("; ") || "";
     }
 
     if (alwaysEnabled) {
@@ -3525,6 +5676,8 @@ function resetMatchForm() {
 
     toggleGameSection(2, false);
     toggleGameSection(3, false);
+
+    renderDuelDeckHelpers();
 }
 
 function toggleGameSection(number, enabled) {
@@ -3544,6 +5697,9 @@ function toggleGameSection(number, enabled) {
         "disabled-section",
         !enabled
     );
+
+    renderSideAssistant(number);
+    renderOpeningHandPicker(number);
 }
 
 function readGameFromForm(
@@ -3583,6 +5739,12 @@ function readGameFromForm(
                         `g${number}SideOut`
                     )
                 ),
+        openingHand:
+            parseCardList(
+                formData.get(
+                    `g${number}OpeningHand`
+                )
+            ).slice(0, 5),
         note:
             formData.get(`g${number}Note`)?.trim() ||
             ""
@@ -3942,6 +6104,208 @@ document
             event.target.checked
         );
     });
+
+document
+    .getElementById(
+        "close-deck-builder"
+    )
+    .addEventListener(
+        "click",
+        closeDeckBuilder
+    );
+
+document
+    .getElementById(
+        "refresh-card-database"
+    )
+    .addEventListener(
+        "click",
+        async () => {
+            await refreshCardDatabase(
+                true
+            );
+
+            renderCardSearchResults();
+        }
+    );
+
+document
+    .getElementById(
+        "card-search-input"
+    )
+    .addEventListener(
+        "focus",
+        () => {
+            refreshCardDatabase();
+        }
+    );
+
+document
+    .getElementById(
+        "card-search-input"
+    )
+    .addEventListener(
+        "input",
+        () => {
+            window.clearTimeout(
+                cardSearchTimer
+            );
+
+            cardSearchTimer =
+                window.setTimeout(
+                    () => {
+                        renderCardSearchResults();
+                    },
+                    120
+                );
+        }
+    );
+
+document
+    .getElementById(
+        "card-search-results"
+    )
+    .addEventListener(
+        "click",
+        (event) => {
+            const button =
+                event.target.closest(
+                    "[data-add-card-id]"
+                );
+
+            if (!button) {
+                return;
+            }
+
+            addCardToDeckBuilder(
+                button.dataset.addCardId
+            );
+        }
+    );
+
+document
+    .getElementById(
+        "deck-builder-panel"
+    )
+    .addEventListener(
+        "click",
+        (event) => {
+            const button =
+                event.target.closest(
+                    "[data-deck-card-action]"
+                );
+
+            if (!button) {
+                return;
+            }
+
+            changeDeckCardQuantity(
+                button.dataset.zone,
+                button.dataset.cardId,
+                button.dataset
+                    .deckCardAction ===
+                    "plus"
+                    ? 1
+                    : -1
+            );
+        }
+    );
+
+document.addEventListener(
+    "click",
+    (event) => {
+        const sideButton =
+            event.target.closest(
+                "[data-side-game]"
+            );
+
+        if (sideButton) {
+            const gameNumber =
+                Number(
+                    sideButton.dataset
+                        .sideGame
+                );
+
+            if (
+                gameNumber >= 2 &&
+                !document.getElementById(
+                    `g${gameNumber}-played`
+                )?.checked
+            ) {
+                return;
+            }
+
+            cycleSideCardSelection(
+                gameNumber,
+                sideButton.dataset
+                    .sideDirection,
+                sideButton.dataset
+                    .sideCardId
+            );
+
+            return;
+        }
+
+        const handButton =
+            event.target.closest(
+                "[data-hand-game]"
+            );
+
+        if (handButton) {
+            const gameNumber =
+                Number(
+                    handButton.dataset
+                        .handGame
+                );
+
+            if (
+                gameNumber >= 2 &&
+                !document.getElementById(
+                    `g${gameNumber}-played`
+                )?.checked
+            ) {
+                return;
+            }
+
+            cycleOpeningHandCard(
+                gameNumber,
+                handButton.dataset
+                    .handCardId
+            );
+        }
+    }
+);
+
+[
+    2,
+    3
+].forEach(
+    (gameNumber) => {
+        [
+            "in",
+            "out"
+        ].forEach(
+            (direction) => {
+                document
+                    .getElementById(
+                        `g${gameNumber}-side-${direction}`
+                    )
+                    .addEventListener(
+                        "input",
+                        () => {
+                            renderSideAssistant(
+                                gameNumber
+                            );
+
+                            renderOpeningHandPicker(
+                                gameNumber
+                            );
+                        }
+                    );
+            }
+        );
+    }
+);
 
 document
     .getElementById("match-form")
@@ -4397,6 +6761,7 @@ document
     .getElementById("my-deck")
     .addEventListener("input", () => {
         renderMyDeckChoices();
+        renderDuelDeckHelpers();
     });
 
 document
@@ -4426,6 +6791,7 @@ document
         ).value = deck.name;
 
         renderMyDeckChoices();
+        renderDuelDeckHelpers();
     });
 
 document
@@ -4450,10 +6816,11 @@ document
         const makeActive =
             getMyDecks().length === 0;
 
-        ensurePersonalDeck(
-            name,
-            makeActive
-        );
+        const createdDeck =
+            ensurePersonalDeck(
+                name,
+                makeActive
+            );
 
         profile.updatedAt =
             new Date().toISOString();
@@ -4463,6 +6830,12 @@ document
         saveAll();
         markProfileDirty();
         renderEverything();
+
+        if (createdDeck) {
+            openDeckBuilder(
+                createdDeck.id
+            );
+        }
     });
 
 document
@@ -4473,10 +6846,24 @@ document
                 "[data-select-personal-deck]"
             );
 
+        const buildButton =
+            event.target.closest(
+                "[data-build-personal-deck]"
+            );
+
         const deleteButton =
             event.target.closest(
                 "[data-delete-personal-deck]"
             );
+
+        if (buildButton) {
+            openDeckBuilder(
+                buildButton.dataset
+                    .buildPersonalDeck
+            );
+
+            return;
+        }
 
         if (selectButton) {
             const deckId =
@@ -4529,6 +6916,13 @@ document
                     (item) =>
                         item.id !== deckId
                 );
+
+            if (
+                deckBuilderDeckId ===
+                deckId
+            ) {
+                closeDeckBuilder();
+            }
 
             if (
                 profile.activeDeckId ===

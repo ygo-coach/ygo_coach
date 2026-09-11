@@ -1,4 +1,4 @@
-const CACHE_NAME = "ygo-coach-v6-3";
+const CACHE_NAME = "ygo-coach-v6-4";
 
 const APP_FILES = [
     "./",
@@ -34,10 +34,25 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+    const requestUrl =
+        new URL(event.request.url);
+
+    if (
+        requestUrl.origin !==
+        self.location.origin
+    ) {
+        event.respondWith(
+            fetch(event.request)
+        );
+
+        return;
+    }
+
     event.respondWith(
         fetch(event.request)
             .then((response) => {
-                const clone = response.clone();
+                const clone =
+                    response.clone();
 
                 caches.open(CACHE_NAME)
                     .then((cache) => {

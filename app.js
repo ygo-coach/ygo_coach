@@ -8,20 +8,27 @@ const STORAGE_KEYS = {
     dirtyProfile: "ygoCoachDirtyProfile",
     deletedMatches: "ygoCoachDeletedMatches",
     deletedTournaments: "ygoCoachDeletedTournaments",
-    lastCloudSyncAt: "ygoCoachLastCloudSyncAt"
+    lastCloudSyncAt: "ygoCoachLastCloudSyncAt",
+    opponentDeckCatalog: "ygoCoachOpponentDeckCatalog",
+    opponentDeckCatalogRefreshedAt: "ygoCoachOpponentDeckCatalogRefreshedAt"
 };
 
 const LEGACY_STORAGE_KEYS = {
     matches: "ygoMatches"
 };
 
-const APP_VERSION = 6.2;
+const APP_VERSION = 6.3;
 
 const ADMIN_EMAIL = "felixlefevre170@gmail.com";
 
 let matches = loadMatches();
 let tournaments = loadArray(STORAGE_KEYS.tournaments);
-let profile = loadObject(STORAGE_KEYS.profile);
+let profile = normalizeProfile(
+    loadObject(STORAGE_KEYS.profile)
+);
+let opponentDeckCatalog = normalizeOpponentDeckCatalog(
+    loadArray(STORAGE_KEYS.opponentDeckCatalog)
+);
 let editingMatchId = null;
 let selectedImportFile = null;
 
@@ -33,6 +40,7 @@ let cloudSyncTimer = null;
 let lastSuccessfulCloudSync = 0;
 
 const FOREGROUND_SYNC_MIN_INTERVAL = 120000;
+const OPPONENT_CATALOG_TTL = 6 * 60 * 60 * 1000;
 
 function generateId() {
     if (
@@ -43,6 +51,240 @@ function generateId() {
     }
 
     return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function normalizeDeckLabel(value) {
+    return String(value || "")
+        .trim()
+        .replace(/\s+/g, " ");
+}
+
+function normalizeDeckKey(value) {
+    return normalizeDeckLabel(value)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase("fr-FR");
+}
+
+function normalizeProfile(source) {
+    const base =
+        source &&
+        typeof source === "object"
+            ? { ...source }
+            : {};
+
+    const seen = new Set();
+    const decks = [];
+
+    const rawDecks = Array.isArray(base.decks)
+        ? base.decks
+        : [];
+
+    rawDecks.forEach((deck) => {
+        const name = normalizeDeckLabel(
+            typeof deck === "string"
+                ? deck
+                : deck?.name
+        );
+
+        const key = normalizeDeckKey(name);
+
+        if (!name || seen.has(key)) {
+            return;
+        }
+
+        seen.add(key);
+        decks.push({
+            id:
+                typeof deck === "object" &&
+                deck?.id
+                    ? String(deck.id)
+                    : generateId(),
+            name,
+            createdAt:
+                typeof deck === "object" &&
+                deck?.createdAt
+                    ? deck.createdAt
+                    : new Date().toISOString()
+        });
+    });
+
+    const legacyDeck = normalizeDeckLabel(
+        base.deck || ""
+    );
+
+    if (
+        legacyDeck &&
+        !seen.has(
+            normalizeDeckKey(legacyDeck)
+        )
+    ) {
+        const legacyEntry = {
+            id: generateId(),
+            name: legacyDeck,
+            createdAt: new Date().toISOString()
+        };
+
+        decks.unshift(legacyEntry);
+        seen.add(
+            normalizeDeckKey(legacyDeck)
+        );
+    }
+
+    let activeDeckId =
+        base.activeDeckId || "";
+
+    if (
+        activeDeckId &&
+        !decks.some(
+            (deck) => deck.id === activeDeckId
+        )
+    ) {
+        activeDeckId = "";
+    }
+
+    if (!activeDeckId && legacyDeck) {
+        activeDeckId =
+            decks.find(
+                (deck) =>
+                    normalizeDeckKey(deck.name) ===
+                    normalizeDeckKey(legacyDeck)
+            )?.id || "";
+    }
+
+    if (!activeDeckId && decks.length > 0) {
+        activeDeckId = decks[0].id;
+    }
+
+    const activeDeck = decks.find(
+        (deck) => deck.id === activeDeckId
+    );
+
+    return {
+        ...base,
+        decks,
+        activeDeckId,
+        deck:
+            activeDeck?.name ||
+            legacyDeck ||
+            ""
+    };
+}
+
+function normalizeOpponentDeckCatalog(items) {
+    const seen = new Set();
+
+    return (Array.isArray(items) ? items : [])
+        .map((item) => {
+            const name = normalizeDeckLabel(
+                typeof item === "string"
+                    ? item
+                    : item?.name
+            );
+
+            return {
+                id:
+                    typeof item === "object" &&
+                    item?.id
+                        ? String(item.id)
+                        : name,
+                name,
+                createdAt:
+                    typeof item === "object"
+                        ? item?.createdAt ||
+                            item?.created_at ||
+                            null
+                        : null
+            };
+        })
+        .filter((item) => {
+            const key = normalizeDeckKey(
+                item.name
+            );
+
+            if (!key || seen.has(key)) {
+                return false;
+            }
+
+            seen.add(key);
+            return true;
+        })
+        .sort((a, b) =>
+            a.name.localeCompare(
+                b.name,
+                "fr",
+                { sensitivity: "base" }
+            )
+        );
+}
+
+function getMyDecks() {
+    profile = normalizeProfile(profile);
+    return profile.decks;
+}
+
+function getActiveMyDeck() {
+    const decks = getMyDecks();
+
+    return decks.find(
+        (deck) =>
+            deck.id === profile.activeDeckId
+    ) || decks[0] || null;
+}
+
+function ensurePersonalDeck(
+    rawName,
+    makeActive = false
+) {
+    const name = normalizeDeckLabel(rawName);
+
+    if (!name) {
+        return null;
+    }
+
+    profile = normalizeProfile(profile);
+
+    let deck = profile.decks.find(
+        (item) =>
+            normalizeDeckKey(item.name) ===
+            normalizeDeckKey(name)
+    );
+
+    if (!deck) {
+        deck = {
+            id: generateId(),
+            name,
+            createdAt:
+                new Date().toISOString()
+        };
+
+        profile.decks.push(deck);
+    }
+
+    if (
+        makeActive ||
+        !profile.activeDeckId
+    ) {
+        profile.activeDeckId = deck.id;
+    }
+
+    const activeDeck =
+        profile.decks.find(
+            (item) =>
+                item.id ===
+                profile.activeDeckId
+        ) || deck;
+
+    profile.deck = activeDeck.name;
+
+    return deck;
+}
+
+function saveOpponentDeckCatalog() {
+    localStorage.setItem(
+        STORAGE_KEYS.opponentDeckCatalog,
+        JSON.stringify(opponentDeckCatalog)
+    );
 }
 
 function loadArray(key) {
@@ -278,6 +520,35 @@ function goToPage(pageName) {
         navButton.classList.add("active");
     }
 
+    if (
+        pageName === "add" &&
+        !editingMatchId
+    ) {
+        const myDeckInput =
+            document.getElementById(
+                "my-deck"
+            );
+
+        if (
+            myDeckInput &&
+            !myDeckInput.value.trim()
+        ) {
+            const activeDeck =
+                getActiveMyDeck();
+
+            if (activeDeck) {
+                myDeckInput.value =
+                    activeDeck.name;
+            }
+        }
+
+        renderMyDeckChoices();
+    }
+
+    if (pageName === "profile") {
+        refreshOpponentDeckCatalog();
+    }
+
     window.scrollTo({
         top: 0,
         behavior: "smooth"
@@ -323,8 +594,11 @@ function initializeSupabaseClient() {
 
 async function initializeCloudAuth() {
     if (!initializeSupabaseClient()) {
+        renderOpponentCatalogSummary();
         return;
     }
+
+    refreshOpponentDeckCatalog();
 
     lastSuccessfulCloudSync =
         Number(
@@ -466,6 +740,7 @@ async function applySession(
     currentUser = nextUser;
 
     renderAccountState();
+    renderProfile();
 
     if (!currentUser) {
         renderTopAccountButton();
@@ -1402,9 +1677,11 @@ async function syncWithCloud(
                 tournaments
             );
 
-            profile = mergeProfile(
-                profile,
-                cloud.profile
+            profile = normalizeProfile(
+                mergeProfile(
+                    profile,
+                    cloud.profile
+                )
             );
 
             saveAll();
@@ -1434,7 +1711,9 @@ async function syncWithCloud(
             matches = cloud.matches;
             tournaments =
                 cloud.tournaments;
-            profile = cloud.profile;
+            profile = normalizeProfile(
+                cloud.profile
+            );
 
             clearCloudMarkers();
 
@@ -1478,7 +1757,9 @@ async function syncWithCloud(
                 );
 
             if (!profileDirty) {
-                profile = cloud.profile;
+                profile = normalizeProfile(
+                cloud.profile
+            );
             }
 
             saveAll();
@@ -2514,14 +2795,557 @@ function renderTournaments() {
 }
 
 function renderProfile() {
-    document.getElementById("profile-name").value =
-        profile.name || "";
+    profile = normalizeProfile(profile);
 
-    document.getElementById("profile-deck").value =
-        profile.deck || "";
+    const activeDeck =
+        getActiveMyDeck();
 
-    document.getElementById("profile-goal").value =
-        profile.goal || "";
+    const profileName =
+        document.getElementById(
+            "profile-name"
+        );
+
+    const profileDeck =
+        document.getElementById(
+            "profile-deck"
+        );
+
+    const profileGoal =
+        document.getElementById(
+            "profile-goal"
+        );
+
+    if (profileName) {
+        profileName.value =
+            profile.name || "";
+    }
+
+    if (profileDeck) {
+        profileDeck.value =
+            activeDeck?.name ||
+            profile.deck ||
+            "";
+    }
+
+    if (profileGoal) {
+        profileGoal.value =
+            profile.goal || "";
+    }
+
+    const pageName =
+        document.getElementById(
+            "profile-page-name"
+        );
+
+    const pageEmail =
+        document.getElementById(
+            "profile-page-email"
+        );
+
+    const pageGoal =
+        document.getElementById(
+            "profile-page-goal"
+        );
+
+    if (pageName) {
+        pageName.textContent =
+            profile.name ||
+            "Joueur YGO";
+    }
+
+    if (pageEmail) {
+        pageEmail.textContent =
+            currentUser?.email ||
+            "Mode local";
+    }
+
+    if (pageGoal) {
+        pageGoal.textContent =
+            profile.goal ||
+            "À définir";
+    }
+
+    renderMyDeckLibrary();
+    renderMyDeckChoices();
+    renderOpponentCatalogSummary();
+}
+
+function renderMyDeckLibrary() {
+    const list =
+        document.getElementById(
+            "my-decks-list"
+        );
+
+    const count =
+        document.getElementById(
+            "my-decks-count"
+        );
+
+    const activeLabel =
+        document.getElementById(
+            "active-deck-name"
+        );
+
+    if (!list) {
+        return;
+    }
+
+    const decks = getMyDecks();
+    const activeDeck =
+        getActiveMyDeck();
+
+    if (count) {
+        count.textContent =
+            `${decks.length} DECK${decks.length > 1 ? "S" : ""}`;
+    }
+
+    if (activeLabel) {
+        activeLabel.textContent =
+            activeDeck?.name ||
+            "Aucun deck";
+    }
+
+    if (decks.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state compact-empty-state">
+                Aucun deck enregistré. Ajoute ton premier deck juste au-dessus.
+            </div>
+        `;
+
+        return;
+    }
+
+    list.innerHTML = decks
+        .map((deck) => {
+            const isActive =
+                deck.id ===
+                profile.activeDeckId;
+
+            return `
+                <article class="deck-library-card ${isActive ? "active" : ""}">
+                    <button
+                        class="deck-library-select"
+                        type="button"
+                        data-select-personal-deck="${escapeHtml(deck.id)}"
+                    >
+                        <span class="deck-card-icon">▤</span>
+
+                        <span>
+                            <strong>${escapeHtml(deck.name)}</strong>
+                            <small>${isActive ? "Deck actif • proposé par défaut" : "Utiliser par défaut"}</small>
+                        </span>
+
+                        ${isActive ? '<span class="active-deck-badge">ACTIF</span>' : ''}
+                    </button>
+
+                    <button
+                        class="deck-delete-button"
+                        type="button"
+                        data-delete-personal-deck="${escapeHtml(deck.id)}"
+                        aria-label="Supprimer ${escapeHtml(deck.name)}"
+                    >
+                        ×
+                    </button>
+                </article>
+            `;
+        })
+        .join("");
+}
+
+function renderMyDeckChoices() {
+    const container =
+        document.getElementById(
+            "my-deck-options"
+        );
+
+    const input =
+        document.getElementById(
+            "my-deck"
+        );
+
+    if (!container || !input) {
+        return;
+    }
+
+    const decks = getMyDecks();
+
+    if (decks.length === 0) {
+        container.innerHTML = `
+            <span class="deck-chip-empty">
+                Aucun deck enregistré
+            </span>
+        `;
+
+        return;
+    }
+
+    const selectedKey =
+        normalizeDeckKey(input.value);
+
+    container.innerHTML = decks
+        .map((deck) => {
+            const selected =
+                normalizeDeckKey(deck.name) ===
+                selectedKey;
+
+            return `
+                <button
+                    class="deck-choice-chip ${selected ? "selected" : ""}"
+                    type="button"
+                    data-pick-my-deck="${escapeHtml(deck.id)}"
+                >
+                    ${escapeHtml(deck.name)}
+                </button>
+            `;
+        })
+        .join("");
+}
+
+function renderOpponentCatalogSummary() {
+    const count =
+        document.getElementById(
+            "opponent-catalog-count"
+        );
+
+    if (count) {
+        count.textContent =
+            `${opponentDeckCatalog.length} DECK${opponentDeckCatalog.length > 1 ? "S" : ""}`;
+    }
+}
+
+function showCatalogStatus(
+    message,
+    isError = false
+) {
+    const element =
+        document.getElementById(
+            "catalog-status"
+        );
+
+    const inlineStatus =
+        document.getElementById(
+            "opponent-catalog-inline-status"
+        );
+
+    if (element) {
+        element.textContent = message;
+        element.classList.remove(
+            "hidden",
+            "error"
+        );
+
+        if (isError) {
+            element.classList.add("error");
+        }
+    }
+
+    if (inlineStatus) {
+        inlineStatus.textContent = message;
+        inlineStatus.classList.toggle(
+            "inline-error",
+            isError
+        );
+    }
+}
+
+async function refreshOpponentDeckCatalog(
+    force = false
+) {
+    renderOpponentCatalogSummary();
+
+    if (
+        !supabaseClient ||
+        !navigator.onLine
+    ) {
+        return;
+    }
+
+    const refreshedAt = Number(
+        localStorage.getItem(
+            STORAGE_KEYS.opponentDeckCatalogRefreshedAt
+        ) || 0
+    );
+
+    if (
+        !force &&
+        opponentDeckCatalog.length > 0 &&
+        Date.now() - refreshedAt <
+            OPPONENT_CATALOG_TTL
+    ) {
+        return;
+    }
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("ygo_opponent_decks")
+        .select("id,name,created_at")
+        .order("name", {
+            ascending: true
+        })
+        .limit(5000);
+
+    if (error) {
+        console.warn(
+            "Base de decks adverses indisponible",
+            error
+        );
+
+        showCatalogStatus(
+            "La base partagée n'est pas encore active. Exécute la migration SQL V6.3 dans Supabase.",
+            true
+        );
+
+        return;
+    }
+
+    opponentDeckCatalog =
+        normalizeOpponentDeckCatalog(
+            data || []
+        );
+
+    saveOpponentDeckCatalog();
+
+    localStorage.setItem(
+        STORAGE_KEYS.opponentDeckCatalogRefreshedAt,
+        String(Date.now())
+    );
+
+    renderOpponentCatalogSummary();
+    renderOpponentDeckSuggestions();
+}
+
+async function addOpponentDeckToCatalog(
+    rawName
+) {
+    const name =
+        normalizeDeckLabel(rawName);
+
+    if (name.length < 2) {
+        showCatalogStatus(
+            "Entre un nom de deck valide.",
+            true
+        );
+        return false;
+    }
+
+    const existing =
+        opponentDeckCatalog.find(
+            (deck) =>
+                normalizeDeckKey(deck.name) ===
+                normalizeDeckKey(name)
+        );
+
+    if (existing) {
+        showCatalogStatus(
+            `${existing.name} est déjà présent dans la base.`
+        );
+        return true;
+    }
+
+    if (!currentUser) {
+        showCatalogStatus(
+            "Connecte-toi pour ajouter un nouveau deck à la base partagée.",
+            true
+        );
+        return false;
+    }
+
+    if (!supabaseClient || !navigator.onLine) {
+        showCatalogStatus(
+            "Connexion cloud indisponible pour le moment.",
+            true
+        );
+        return false;
+    }
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("ygo_opponent_decks")
+        .insert({
+            name,
+            created_by: currentUser.id
+        })
+        .select("id,name,created_at")
+        .single();
+
+    if (error) {
+        if (error.code === "23505") {
+            await refreshOpponentDeckCatalog(true);
+
+            showCatalogStatus(
+                `${name} existe déjà dans la base.`
+            );
+            return true;
+        }
+
+        console.error(error);
+        showCatalogStatus(
+            `Ajout impossible : ${error.message || error}`,
+            true
+        );
+        return false;
+    }
+
+    opponentDeckCatalog =
+        normalizeOpponentDeckCatalog([
+            ...opponentDeckCatalog,
+            data
+        ]);
+
+    saveOpponentDeckCatalog();
+
+    localStorage.setItem(
+        STORAGE_KEYS.opponentDeckCatalogRefreshedAt,
+        String(Date.now())
+    );
+
+    renderOpponentCatalogSummary();
+    renderOpponentDeckSuggestions();
+
+    showCatalogStatus(
+        `${data.name} a été ajouté à la base partagée.`
+    );
+
+    return true;
+}
+
+function getOpponentDeckSuggestions(
+    rawQuery
+) {
+    const query = normalizeDeckKey(
+        rawQuery
+    );
+
+    if (!query) {
+        return [];
+    }
+
+    const starts = [];
+    const contains = [];
+
+    opponentDeckCatalog.forEach((deck) => {
+        const key = normalizeDeckKey(
+            deck.name
+        );
+
+        if (key.startsWith(query)) {
+            starts.push(deck);
+        } else if (key.includes(query)) {
+            contains.push(deck);
+        }
+    });
+
+    return [
+        ...starts,
+        ...contains
+    ].slice(0, 8);
+}
+
+function renderOpponentDeckSuggestions() {
+    const input =
+        document.getElementById(
+            "opponent-deck"
+        );
+
+    const container =
+        document.getElementById(
+            "opponent-deck-suggestions"
+        );
+
+    const addButton =
+        document.getElementById(
+            "catalog-add-from-match-button"
+        );
+
+    if (!input || !container) {
+        return;
+    }
+
+    const value =
+        normalizeDeckLabel(input.value);
+
+    const suggestions =
+        getOpponentDeckSuggestions(value);
+
+    const exactMatch =
+        opponentDeckCatalog.some(
+            (deck) =>
+                normalizeDeckKey(deck.name) ===
+                normalizeDeckKey(value)
+        );
+
+    if (addButton) {
+        addButton.classList.toggle(
+            "hidden",
+            value.length < 2 ||
+                exactMatch
+        );
+    }
+
+    if (
+        value.length === 0 ||
+        suggestions.length === 0
+    ) {
+        container.classList.add(
+            "hidden"
+        );
+        container.innerHTML = "";
+        return;
+    }
+
+    container.innerHTML = suggestions
+        .map((deck) => `
+            <button
+                class="deck-suggestion-button"
+                type="button"
+                data-opponent-suggestion="${escapeHtml(deck.id)}"
+                role="option"
+            >
+                <span class="suggestion-icon">⚔</span>
+                <span>${escapeHtml(deck.name)}</span>
+            </button>
+        `)
+        .join("");
+
+    container.classList.remove(
+        "hidden"
+    );
+}
+
+function selectOpponentDeckSuggestion(
+    deckId
+) {
+    const deck =
+        opponentDeckCatalog.find(
+            (item) =>
+                String(item.id) ===
+                String(deckId)
+        );
+
+    if (!deck) {
+        return;
+    }
+
+    const input =
+        document.getElementById(
+            "opponent-deck"
+        );
+
+    if (input) {
+        input.value = deck.name;
+    }
+
+    renderOpponentDeckSuggestions();
+
+    document
+        .getElementById(
+            "opponent-deck-suggestions"
+        )
+        ?.classList.add("hidden");
 }
 
 function startEditingMatch(matchId) {
@@ -2682,6 +3506,18 @@ function resetMatchForm() {
         document.getElementById("match-form");
 
     form.reset();
+
+    const activeDeck =
+        getActiveMyDeck();
+
+    if (activeDeck) {
+        document.getElementById(
+            "my-deck"
+        ).value = activeDeck.name;
+    }
+
+    renderMyDeckChoices();
+    renderOpponentDeckSuggestions();
 
     document.getElementById(
         "g1-position"
@@ -2905,7 +3741,9 @@ async function importBackup() {
         if (mode === "replace") {
             matches = importedMatches;
             tournaments = importedTournaments;
-            profile = importedProfile;
+            profile = normalizeProfile(
+                importedProfile
+            );
         } else {
             matches = mergeById(
                 matches,
@@ -2917,10 +3755,10 @@ async function importBackup() {
                 importedTournaments
             );
 
-            profile = {
+            profile = normalizeProfile({
                 ...profile,
                 ...importedProfile
-            };
+            });
         }
 
         saveAll();
@@ -3276,15 +4114,11 @@ document
         const formData =
             new FormData(event.currentTarget);
 
-        profile = {
+        profile = normalizeProfile({
             ...profile,
             name:
                 formData
                     .get("profileName")
-                    .trim(),
-            deck:
-                formData
-                    .get("profileDeck")
                     .trim(),
             goal:
                 formData
@@ -3292,7 +4126,19 @@ document
                     .trim(),
             updatedAt:
                 new Date().toISOString()
-        };
+        });
+
+        const mainDeckName =
+            formData
+                .get("profileDeck")
+                .trim();
+
+        if (mainDeckName) {
+            ensurePersonalDeck(
+                mainDeckName,
+                true
+            );
+        }
 
         saveAll();
         markProfileDirty();
@@ -3465,7 +4311,7 @@ document
 
             matches = [];
             tournaments = [];
-            profile = {};
+            profile = normalizeProfile({});
 
             clearCloudMarkers();
             saveAll();
@@ -3540,6 +4386,263 @@ document
             await signOut();
         }
     });
+
+document
+    .getElementById("open-profile-decks")
+    .addEventListener("click", () => {
+        goToPage("profile");
+    });
+
+document
+    .getElementById("my-deck")
+    .addEventListener("input", () => {
+        renderMyDeckChoices();
+    });
+
+document
+    .getElementById("my-deck-options")
+    .addEventListener("click", (event) => {
+        const button =
+            event.target.closest(
+                "[data-pick-my-deck]"
+            );
+
+        if (!button) {
+            return;
+        }
+
+        const deck = getMyDecks().find(
+            (item) =>
+                item.id ===
+                button.dataset.pickMyDeck
+        );
+
+        if (!deck) {
+            return;
+        }
+
+        document.getElementById(
+            "my-deck"
+        ).value = deck.name;
+
+        renderMyDeckChoices();
+    });
+
+document
+    .getElementById("my-deck-form")
+    .addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const input =
+            document.getElementById(
+                "new-my-deck-name"
+            );
+
+        const name =
+            normalizeDeckLabel(
+                input.value
+            );
+
+        if (!name) {
+            return;
+        }
+
+        const makeActive =
+            getMyDecks().length === 0;
+
+        ensurePersonalDeck(
+            name,
+            makeActive
+        );
+
+        profile.updatedAt =
+            new Date().toISOString();
+
+        input.value = "";
+
+        saveAll();
+        markProfileDirty();
+        renderEverything();
+    });
+
+document
+    .getElementById("my-decks-list")
+    .addEventListener("click", (event) => {
+        const selectButton =
+            event.target.closest(
+                "[data-select-personal-deck]"
+            );
+
+        const deleteButton =
+            event.target.closest(
+                "[data-delete-personal-deck]"
+            );
+
+        if (selectButton) {
+            const deckId =
+                selectButton.dataset
+                    .selectPersonalDeck;
+
+            const deck = getMyDecks().find(
+                (item) =>
+                    item.id === deckId
+            );
+
+            if (!deck) {
+                return;
+            }
+
+            profile.activeDeckId =
+                deck.id;
+            profile.deck = deck.name;
+            profile.updatedAt =
+                new Date().toISOString();
+
+            saveAll();
+            markProfileDirty();
+            renderEverything();
+            return;
+        }
+
+        if (deleteButton) {
+            const deckId =
+                deleteButton.dataset
+                    .deletePersonalDeck;
+
+            const deck = getMyDecks().find(
+                (item) =>
+                    item.id === deckId
+            );
+
+            if (!deck) {
+                return;
+            }
+
+            if (!window.confirm(
+                `Supprimer ${deck.name} de tes decks ? Tes anciens matchs ne seront pas modifiés.`
+            )) {
+                return;
+            }
+
+            profile.decks =
+                getMyDecks().filter(
+                    (item) =>
+                        item.id !== deckId
+                );
+
+            if (
+                profile.activeDeckId ===
+                deckId
+            ) {
+                profile.activeDeckId =
+                    profile.decks[0]?.id ||
+                    "";
+            }
+
+            profile.deck =
+                profile.decks.find(
+                    (item) =>
+                        item.id ===
+                        profile.activeDeckId
+                )?.name || "";
+
+            profile.updatedAt =
+                new Date().toISOString();
+
+            saveAll();
+            markProfileDirty();
+            renderEverything();
+        }
+    });
+
+document
+    .getElementById("opponent-deck")
+    .addEventListener("input", () => {
+        renderOpponentDeckSuggestions();
+    });
+
+document
+    .getElementById("opponent-deck")
+    .addEventListener("focus", () => {
+        refreshOpponentDeckCatalog();
+        renderOpponentDeckSuggestions();
+    });
+
+document
+    .getElementById("opponent-deck-suggestions")
+    .addEventListener("click", (event) => {
+        const button =
+            event.target.closest(
+                "[data-opponent-suggestion]"
+            );
+
+        if (!button) {
+            return;
+        }
+
+        selectOpponentDeckSuggestion(
+            button.dataset
+                .opponentSuggestion
+        );
+    });
+
+document
+    .getElementById("catalog-add-from-match-button")
+    .addEventListener("click", async () => {
+        const input =
+            document.getElementById(
+                "opponent-deck"
+            );
+
+        const added =
+            await addOpponentDeckToCatalog(
+                input.value
+            );
+
+        if (added) {
+            renderOpponentDeckSuggestions();
+        }
+    });
+
+document
+    .getElementById("opponent-catalog-form")
+    .addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const input =
+            document.getElementById(
+                "catalog-deck-name"
+            );
+
+        const added =
+            await addOpponentDeckToCatalog(
+                input.value
+            );
+
+        if (added) {
+            input.value = "";
+        }
+    });
+
+document.addEventListener(
+    "click",
+    (event) => {
+        const field =
+            event.target.closest(
+                ".autocomplete-field"
+            );
+
+        if (!field) {
+            document
+                .getElementById(
+                    "opponent-deck-suggestions"
+                )
+                ?.classList.add(
+                    "hidden"
+                );
+        }
+    }
+);
 
 document
     .getElementById("auth-form")

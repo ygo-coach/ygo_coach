@@ -1,48 +1,50 @@
-YGO COACH V6.2
+YGO COACH V6.3 - PROFILS & BIBLIOTHÈQUES DE DECKS
 
-NOUVEAUTÉ PRINCIPALE
-    - accès administrateur réservé au compte :
-      felixlefevre170@gmail.com
+NOUVEAUTÉS
 
-ONGLET "PLUS"
+    - nouvelle page Profil dans la navigation
+    - bibliothèque personnelle "Mes decks"
+    - possibilité de choisir un deck actif / par défaut
+    - pendant l'ajout d'un match, tous les decks personnels apparaissent sous forme de boutons
+    - un clic sur un deck remplit immédiatement "Mon deck"
+    - base Supabase commune de decks adverses
+    - autocomplétion du deck adverse pendant la saisie
+    - un utilisateur connecté peut proposer un nouveau deck adverse
+    - les nouveaux decks adverses deviennent disponibles pour tous
+    - cache local de la base adverse pendant 6 heures pour limiter les requêtes Supabase
 
-Pour un utilisateur normal connecté, seuls ces blocs sont visibles :
-    - Mon coaching
-    - Mes événements
+IMPORTANT : MIGRATION SUPABASE OBLIGATOIRE
 
-Les blocs suivants sont masqués :
-    - Synchronisation cloud / panneau compte
-    - Sauvegarde PC <-> iPhone
-    - Import / export JSON
-    - Réinitialisation
+Avant d'utiliser la base partagée, ouvre Supabase > SQL Editor et exécute :
 
-Pour le compte administrateur, tous les blocs restent disponibles.
+    supabase-v6.3-decks.sql
 
-CONNEXION / DÉCONNEXION
-    - Si aucun compte n'est connecté, le bouton "Se connecter" reste visible en haut.
-    - En cliquant dessus, l'utilisateur arrive sur le formulaire de connexion.
-    - Pour un utilisateur normal déjà connecté, cliquer sur le bouton cloud du haut permet de se déconnecter sans faire apparaître les outils admin.
+Le script crée uniquement la nouvelle table ygo_opponent_decks et ses règles RLS.
+Il ne supprime ni ne modifie les matchs/tournois/profils déjà présents.
 
-SÉCURITÉ
-    - Les boutons admin sont masqués dans l'interface.
-    - Les fonctions export/import/réinitialisation vérifient aussi l'adresse email du compte avant de s'exécuter.
-    - Les règles RLS Supabase continuent de protéger les données entre utilisateurs.
+MES DECKS
 
-IMPORTANT
-Cette restriction admin est appliquée dans le frontend. Elle convient aux outils locaux de l'application.
-Si de futures fonctions administrateur permettent de lire/modifier les données d'autres utilisateurs, il faudra alors ajouter un vrai rôle admin côté Supabase / serveur.
+Les decks personnels sont stockés dans le profil existant, donc ils profitent déjà de la synchronisation cloud V6.
+Le champ historique profile.deck est conservé pour la compatibilité avec les anciennes versions.
 
-SUPABASE
-    - aucune modification SQL nécessaire par rapport à la V6/V6.1
-    - aucun changement de table
-    - aucun changement de compte
+BASE ADVERSE PARTAGÉE
 
-MISE EN LIGNE
+    - lecture : accessible à tous pour afficher les suggestions
+    - ajout : réservé aux utilisateurs connectés
+    - pas de modification/suppression publique
+    - les doublons de noms sont bloqués côté PostgreSQL
 
-Après avoir remplacé les fichiers :
+MISE À JOUR GITHUB PAGES
+
+Après avoir remplacé les fichiers de ton projet :
 
     git add .
-    git commit -m "YGO Coach V6.2 admin access"
+    git commit -m "YGO Coach V6.3 decks and profiles"
     git push
 
 GitHub Pages redéploiera automatiquement.
+
+Si l'ancienne interface reste visible :
+
+    PC : Ctrl + F5
+    iPhone/PWA : fermer complètement l'app puis la rouvrir

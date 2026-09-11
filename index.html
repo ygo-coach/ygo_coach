@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="YGO Coach">
 
-    <title>YGO Coach V6.2</title>
+    <title>YGO Coach V6.3</title>
 
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
@@ -159,8 +159,14 @@
                     </div>
 
                     <div class="form-grid">
-                        <div class="field-group">
+                        <div class="field-group deck-picker-field">
                             <label for="my-deck">Mon deck</label>
+
+                            <div
+                                id="my-deck-options"
+                                class="deck-chip-list"
+                                aria-label="Mes decks"
+                            ></div>
 
                             <input
                                 id="my-deck"
@@ -170,19 +176,49 @@
                                 autocomplete="off"
                                 required
                             >
+
+                            <button
+                                id="open-profile-decks"
+                                class="inline-text-button"
+                                type="button"
+                            >
+                                Gérer mes decks dans Profil
+                            </button>
                         </div>
 
-                        <div class="field-group">
+                        <div class="field-group autocomplete-field">
                             <label for="opponent-deck">Deck adverse</label>
 
                             <input
                                 id="opponent-deck"
                                 name="opponentDeck"
                                 type="text"
-                                placeholder="K9, Elfnote..."
+                                placeholder="Commence à taper : K9, Elfnote..."
                                 autocomplete="off"
+                                aria-autocomplete="list"
+                                aria-controls="opponent-deck-suggestions"
                                 required
                             >
+
+                            <div
+                                id="opponent-deck-suggestions"
+                                class="deck-suggestions hidden"
+                                role="listbox"
+                            ></div>
+
+                            <div class="field-helper-row">
+                                <small id="opponent-catalog-inline-status">
+                                    Suggestions issues de la base partagée YGO Coach.
+                                </small>
+
+                                <button
+                                    id="catalog-add-from-match-button"
+                                    class="inline-text-button hidden"
+                                    type="button"
+                                >
+                                    + Ajouter à la base
+                                </button>
+                            </div>
                         </div>
 
                         <div class="field-group">
@@ -634,6 +670,118 @@
                 </div>
             </section>
 
+
+            <section id="page-profile" class="page">
+                <div class="page-heading">
+                    <p class="section-kicker">Profil joueur</p>
+                    <h2>Mon profil</h2>
+                    <p>
+                        Enregistre tes decks une fois, puis sélectionne-les d'un simple clic quand tu ajoutes une ronde.
+                    </p>
+                </div>
+
+                <div class="profile-overview-card">
+                    <div class="profile-avatar-large">🦉</div>
+
+                    <div class="profile-overview-copy">
+                        <p class="section-kicker">Joueur</p>
+                        <h3 id="profile-page-name">Joueur YGO</h3>
+                        <p id="profile-page-email">Mode local</p>
+                        <small>
+                            Objectif : <strong id="profile-page-goal">À définir</strong>
+                        </small>
+                    </div>
+
+                    <button
+                        class="secondary-button small"
+                        type="button"
+                        data-go-page="more"
+                    >
+                        Modifier mon coaching
+                    </button>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Decks personnels</p>
+                            <h3>Mes decks</h3>
+                        </div>
+
+                        <span id="my-decks-count" class="panel-chip">0 DECK</span>
+                    </div>
+
+                    <p class="panel-copy">
+                        Le deck actif est proposé automatiquement pour une nouvelle ronde. Tous tes decks restent disponibles sous forme de boutons.
+                    </p>
+
+                    <div class="active-deck-banner">
+                        <span>Deck actif</span>
+                        <strong id="active-deck-name">Aucun deck</strong>
+                    </div>
+
+                    <form id="my-deck-form" class="inline-form deck-add-form">
+                        <input
+                            id="new-my-deck-name"
+                            type="text"
+                            placeholder="Ex : Artmage Power Patron"
+                            autocomplete="off"
+                            maxlength="80"
+                            required
+                        >
+
+                        <button
+                            class="primary-button small"
+                            type="submit"
+                        >
+                            Ajouter
+                        </button>
+                    </form>
+
+                    <div id="my-decks-list" class="deck-library-list"></div>
+                </div>
+
+                <div class="panel shared-catalog-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Communauté</p>
+                            <h3>Base de decks adverses</h3>
+                        </div>
+
+                        <span id="opponent-catalog-count" class="panel-chip">0 DECK</span>
+                    </div>
+
+                    <p class="panel-copy">
+                        Cette base est commune à tous les utilisateurs. Une fois un deck ajouté, il peut apparaître dans les suggestions de tout le monde.
+                    </p>
+
+                    <form id="opponent-catalog-form" class="inline-form deck-add-form">
+                        <input
+                            id="catalog-deck-name"
+                            type="text"
+                            placeholder="Ex : Mitsurugi"
+                            autocomplete="off"
+                            maxlength="80"
+                            required
+                        >
+
+                        <button
+                            class="primary-button small"
+                            type="submit"
+                        >
+                            Ajouter à la base
+                        </button>
+                    </form>
+
+                    <div id="catalog-status" class="status-message hidden"></div>
+
+                    <div class="catalog-note">
+                        <strong>Principe :</strong>
+                        commence à taper le nom du deck adverse pendant une ronde et YGO Coach affiche les correspondances disponibles.
+                    </div>
+                </div>
+            </section>
+
             <section id="page-more" class="page">
                 <div class="page-heading">
                     <p class="section-kicker">Mon espace</p>
@@ -936,6 +1084,11 @@
             <button class="nav-button" data-page="stats" type="button">
                 <span class="nav-icon">▥</span>
                 <small>Stats</small>
+            </button>
+
+            <button class="nav-button" data-page="profile" type="button">
+                <span class="nav-icon">♙</span>
+                <small>Profil</small>
             </button>
 
             <button class="nav-button" data-page="more" type="button">

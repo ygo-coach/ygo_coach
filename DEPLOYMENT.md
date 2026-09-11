@@ -166,3 +166,28 @@ git add .
 git commit -m "YGO Coach V6.2 admin access"
 git push
 ```
+
+
+## V6.3 — profils, decks personnels et base adverse partagée
+
+### 1. Migration Supabase
+
+Dans **Supabase → SQL Editor**, exécuter le contenu de :
+
+`supabase-v6.3-decks.sql`
+
+Cette migration ajoute `public.ygo_opponent_decks` avec :
+
+- lecture publique pour l'autocomplétion ;
+- insertion uniquement pour un utilisateur authentifié ;
+- unicité du nom normalisé pour éviter les doublons.
+
+### 2. Déployer le frontend
+
+```powershell
+git add .
+git commit -m "YGO Coach V6.3 decks and profiles"
+git push
+```
+
+Aucune migration n'est nécessaire pour les decks personnels : ils sont stockés dans le JSON du profil existant.

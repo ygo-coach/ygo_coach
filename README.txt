@@ -1,32 +1,48 @@
-YGO COACH V6 CLOUD
+YGO COACH V6.2
 
-NOUVEAUTÉS
-    - création de compte email / mot de passe
-    - connexion / déconnexion
-    - récupération de mot de passe
-    - synchronisation automatique PC <-> iPhone
-    - migration automatique de la base V5 au premier login
-    - fonctionnement local-first
-    - copie locale disponible même si le cloud est momentanément inaccessible
-    - synchronisation manuelle "Synchroniser maintenant"
-    - synchronisation périodique quand l'app est ouverte
-    - protection des données avec Supabase RLS
-    - suppression cloud lors de la réinitialisation si l'utilisateur est connecté
+NOUVEAUTÉ PRINCIPALE
+    - accès administrateur réservé au compte :
+      felixlefevre170@gmail.com
 
-GRATUIT
-    - le code fonctionne avec le plan Free de Supabase
-    - l'application peut être hébergée gratuitement sur GitHub Pages ou Cloudflare Pages
+ONGLET "PLUS"
+
+Pour un utilisateur normal connecté, seuls ces blocs sont visibles :
+    - Mon coaching
+    - Mes événements
+
+Les blocs suivants sont masqués :
+    - Synchronisation cloud / panneau compte
+    - Sauvegarde PC <-> iPhone
+    - Import / export JSON
+    - Réinitialisation
+
+Pour le compte administrateur, tous les blocs restent disponibles.
+
+CONNEXION / DÉCONNEXION
+    - Si aucun compte n'est connecté, le bouton "Se connecter" reste visible en haut.
+    - En cliquant dessus, l'utilisateur arrive sur le formulaire de connexion.
+    - Pour un utilisateur normal déjà connecté, cliquer sur le bouton cloud du haut permet de se déconnecter sans faire apparaître les outils admin.
+
+SÉCURITÉ
+    - Les boutons admin sont masqués dans l'interface.
+    - Les fonctions export/import/réinitialisation vérifient aussi l'adresse email du compte avant de s'exécuter.
+    - Les règles RLS Supabase continuent de protéger les données entre utilisateurs.
 
 IMPORTANT
-    1. Exécute `supabase-schema.sql` dans Supabase SQL Editor.
-    2. Renseigne `config.js` avec le Project URL et la publishable key.
-    3. N'utilise JAMAIS la clé service_role côté navigateur.
-    4. Lis DEPLOYMENT.md pour la mise en ligne.
+Cette restriction admin est appliquée dans le frontend. Elle convient aux outils locaux de l'application.
+Si de futures fonctions administrateur permettent de lire/modifier les données d'autres utilisateurs, il faudra alors ajouter un vrai rôle admin côté Supabase / serveur.
 
-BASE V5 CONSERVÉE
-Les clés locales principales ne changent pas :
-    ygoCoachMatches
-    ygoCoachTournaments
-    ygoCoachProfile
+SUPABASE
+    - aucune modification SQL nécessaire par rapport à la V6/V6.1
+    - aucun changement de table
+    - aucun changement de compte
 
-Au premier login sur ce navigateur, les données existantes sont fusionnées dans le compte cloud.
+MISE EN LIGNE
+
+Après avoir remplacé les fichiers :
+
+    git add .
+    git commit -m "YGO Coach V6.2 admin access"
+    git push
+
+GitHub Pages redéploiera automatiquement.

@@ -1258,3 +1258,65 @@ textarea:focus {
         grid-template-columns: 1fr;
     }
 }
+
+
+/* =========================
+   V6.1 - SYNCHRO OPTIMISÉE
+   ========================= */
+
+.cloud-pill.logged-out {
+    border-color: rgba(32, 163, 122, 0.45);
+    background:
+        linear-gradient(
+            145deg,
+            rgba(32, 163, 122, 0.22),
+            rgba(18, 129, 95, 0.14)
+        );
+    color: #ffffff;
+}
+
+.cloud-pill.logged-out .cloud-dot {
+    background: #42d59c;
+    box-shadow: 0 0 0 4px rgba(66, 213, 156, 0.10);
+}
+
+.cloud-pill.config-needed {
+    border-color: rgba(216, 180, 92, 0.40);
+    background: rgba(216, 180, 92, 0.10);
+}
+
+.cloud-pill.offline {
+    border-color: rgba(216, 180, 92, 0.35);
+}
+
+.cloud-pill.offline .cloud-dot {
+    background: #d8b45c;
+}
+
+.sync-info-box {
+    margin-top: 12px;
+    padding: 11px 12px;
+    border-radius: 14px;
+    background: #f5f8f7;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+
+/* =========================
+   V6.2 - VISIBILITÉ ADMIN
+   ========================= */
+
+#backup-panel,
+#danger-panel {
+    transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+}
+
+#account-panel.hidden,
+#backup-panel.hidden,
+#danger-panel.hidden {
+    display: none !important;
+}

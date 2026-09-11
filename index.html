@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="YGO Coach">
 
-    <title>YGO Coach V6 Cloud</title>
+    <title>YGO Coach V6.2</title>
 
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
@@ -637,14 +637,14 @@
             <section id="page-more" class="page">
                 <div class="page-heading">
                     <p class="section-kicker">Mon espace</p>
-                    <h2>Compte, cloud & données</h2>
-                    <p>
-                        Connecte-toi une fois : tes matchs, tournois et ton profil se synchronisent ensuite automatiquement entre PC et iPhone.
+                    <h2 id="more-page-title">Mon espace</h2>
+                    <p id="more-page-description">
+                        Gère ton coaching et tes événements.
                     </p>
                 </div>
 
 
-                <div class="panel account-panel">
+                <div id="account-panel" class="panel account-panel">
                     <div class="panel-heading">
                         <div>
                             <p class="section-kicker">Compte</p>
@@ -746,12 +746,16 @@
                                 Se déconnecter
                             </button>
                         </div>
+
+                        <div class="sync-info-box">
+                            La V6.1 synchronise au démarrage, après une modification, au retour dans l'app après un délai et quand Internet revient. Il n'y a plus de requête automatique toutes les 30 secondes.
+                        </div>
                     </div>
 
                     <div id="account-status-message" class="status-message hidden"></div>
                 </div>
 
-                <div class="panel">
+                <div id="coaching-panel" class="panel">
                     <div class="panel-heading">
                         <div>
                             <p class="section-kicker">Profil</p>
@@ -803,7 +807,7 @@
                     </form>
                 </div>
 
-                <div class="panel">
+                <div id="events-panel" class="panel">
                     <div class="panel-heading">
                         <div>
                             <p class="section-kicker">Tournois</p>
@@ -834,7 +838,7 @@
                     <div id="tournaments-list" class="stack"></div>
                 </div>
 
-                <div class="panel">
+                <div id="backup-panel" class="panel hidden">
                     <div class="panel-heading">
                         <div>
                             <p class="section-kicker">Sauvegarde</p>
@@ -890,7 +894,7 @@
                     <div id="backup-status" class="status-message hidden"></div>
                 </div>
 
-                <div class="panel danger-panel">
+                <div id="danger-panel" class="panel danger-panel hidden">
                     <div class="panel-heading">
                         <div>
                             <p class="section-kicker danger-kicker">Zone sensible</p>

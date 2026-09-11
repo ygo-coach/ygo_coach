@@ -1,4 +1,4 @@
-# YGO Coach V6 — mise en ligne gratuite
+# YGO Coach V6.1 — mise en ligne gratuite
 
 La V6 utilise :
 
@@ -126,3 +126,43 @@ Le premier login migre la base V5 locale vers le cloud.
 - `supabase-schema.sql`
 - `README.txt`
 - `DEPLOYMENT.md`
+
+
+## Mise à jour depuis la V6
+
+Aucune modification de la base Supabase n'est nécessaire.
+
+Dans le dossier du projet :
+
+```powershell
+git add .
+git commit -m "YGO Coach V6.1"
+git push
+```
+
+GitHub Pages redéploiera automatiquement la nouvelle version.
+
+La V6.1 supprime la synchronisation périodique toutes les 30 secondes.
+La synchronisation reste automatique lors des événements utiles.
+
+
+## V6.2 — accès administrateur
+
+Aucune modification Supabase n'est nécessaire.
+
+Le compte administrateur configuré dans l'application est :
+
+`felixlefevre170@gmail.com`
+
+Les utilisateurs standards ne voient dans l'onglet Plus que :
+
+- Mon coaching
+- Mes événements
+
+Pour déployer :
+
+```powershell
+git add .
+git commit -m "YGO Coach V6.2 admin access"
+git push
+```

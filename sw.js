@@ -1,4 +1,4 @@
-const CACHE_NAME = "ygo-coach-v6-cloud";
+const CACHE_NAME = "ygo-coach-v6-2";
 
 const APP_FILES = [
     "./",

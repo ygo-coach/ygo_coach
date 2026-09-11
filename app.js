@@ -7,14 +7,17 @@ const STORAGE_KEYS = {
     dirtyTournaments: "ygoCoachDirtyTournaments",
     dirtyProfile: "ygoCoachDirtyProfile",
     deletedMatches: "ygoCoachDeletedMatches",
-    deletedTournaments: "ygoCoachDeletedTournaments"
+    deletedTournaments: "ygoCoachDeletedTournaments",
+    lastCloudSyncAt: "ygoCoachLastCloudSyncAt"
 };
 
 const LEGACY_STORAGE_KEYS = {
     matches: "ygoMatches"
 };
 
-const APP_VERSION = 6;
+const APP_VERSION = 6.2;
+
+const ADMIN_EMAIL = "felixlefevre170@gmail.com";
 
 let matches = loadMatches();
 let tournaments = loadArray(STORAGE_KEYS.tournaments);
@@ -27,7 +30,9 @@ let currentUser = null;
 let cloudSyncInProgress = false;
 let cloudSyncQueued = false;
 let cloudSyncTimer = null;
-let cloudPollTimer = null;
+let lastSuccessfulCloudSync = 0;
+
+const FOREGROUND_SYNC_MIN_INTERVAL = 120000;
 
 function generateId() {
     if (
@@ -295,7 +300,7 @@ function isSupabaseConfigured() {
 function initializeSupabaseClient() {
     if (!isSupabaseConfigured()) {
         renderAccountState();
-        setCloudStatus("local", "Local");
+        renderTopAccountButton();
         return false;
     }
 
@@ -321,6 +326,13 @@ async function initializeCloudAuth() {
         return;
     }
 
+    lastSuccessfulCloudSync =
+        Number(
+            localStorage.getItem(
+                STORAGE_KEYS.lastCloudSyncAt
+            )
+        ) || 0;
+
     const {
         data,
         error
@@ -328,6 +340,7 @@ async function initializeCloudAuth() {
 
     if (error) {
         console.error(error);
+
         showAccountStatus(
             "Impossible de lire la session Supabase.",
             true
@@ -376,28 +389,68 @@ async function initializeCloudAuth() {
         }
     );
 
-    if (!cloudPollTimer) {
-        cloudPollTimer = window.setInterval(() => {
-            if (
-                currentUser &&
-                document.visibilityState === "visible"
-            ) {
-                requestCloudSync(0);
-            }
-        }, 30000);
-    }
-
     document.addEventListener(
         "visibilitychange",
         () => {
             if (
-                currentUser &&
                 document.visibilityState === "visible"
             ) {
-                requestCloudSync(500);
+                syncOnForeground();
             }
         }
     );
+
+    window.addEventListener(
+        "focus",
+        syncOnForeground
+    );
+
+    window.addEventListener(
+        "online",
+        () => {
+            renderTopAccountButton();
+
+            if (currentUser) {
+                requestCloudSync(300);
+            }
+        }
+    );
+
+    window.addEventListener(
+        "offline",
+        () => {
+            renderTopAccountButton();
+
+            if (currentUser) {
+                setCloudStatus(
+                    "local",
+                    "Hors ligne",
+                    "Les modifications restent enregistrées localement."
+                );
+            }
+        }
+    );
+}
+
+function syncOnForeground() {
+    if (
+        !currentUser ||
+        !supabaseClient ||
+        !navigator.onLine
+    ) {
+        return;
+    }
+
+    const elapsed =
+        Date.now() -
+        lastSuccessfulCloudSync;
+
+    if (
+        elapsed >=
+        FOREGROUND_SYNC_MIN_INTERVAL
+    ) {
+        requestCloudSync(300);
+    }
 }
 
 async function applySession(
@@ -415,11 +468,7 @@ async function applySession(
     renderAccountState();
 
     if (!currentUser) {
-        setCloudStatus(
-            "local",
-            "Local"
-        );
-
+        renderTopAccountButton();
         return;
     }
 
@@ -436,6 +485,133 @@ async function applySession(
     } else {
         requestCloudSync(250);
     }
+}
+
+function isAdminUser() {
+    return Boolean(
+        currentUser?.email &&
+        currentUser.email
+            .trim()
+            .toLowerCase() === ADMIN_EMAIL
+    );
+}
+
+function renderRoleVisibility() {
+    const accountPanel =
+        document.getElementById(
+            "account-panel"
+        );
+
+    const backupPanel =
+        document.getElementById(
+            "backup-panel"
+        );
+
+    const dangerPanel =
+        document.getElementById(
+            "danger-panel"
+        );
+
+    const moreTitle =
+        document.getElementById(
+            "more-page-title"
+        );
+
+    const moreDescription =
+        document.getElementById(
+            "more-page-description"
+        );
+
+    const isAdmin =
+        isAdminUser();
+
+    if (!currentUser) {
+        accountPanel?.classList.remove(
+            "hidden"
+        );
+
+        backupPanel?.classList.add(
+            "hidden"
+        );
+
+        dangerPanel?.classList.add(
+            "hidden"
+        );
+
+        if (moreTitle) {
+            moreTitle.textContent =
+                "Mon espace";
+        }
+
+        if (moreDescription) {
+            moreDescription.textContent =
+                "Connecte-toi pour synchroniser tes données, puis gère ton coaching et tes événements.";
+        }
+
+        return;
+    }
+
+    if (isAdmin) {
+        accountPanel?.classList.remove(
+            "hidden"
+        );
+
+        backupPanel?.classList.remove(
+            "hidden"
+        );
+
+        dangerPanel?.classList.remove(
+            "hidden"
+        );
+
+        if (moreTitle) {
+            moreTitle.textContent =
+                "Administration & coaching";
+        }
+
+        if (moreDescription) {
+            moreDescription.textContent =
+                "Gère ton coaching, tes événements, la synchronisation, les sauvegardes et les outils d'administration.";
+        }
+
+        return;
+    }
+
+    accountPanel?.classList.add(
+        "hidden"
+    );
+
+    backupPanel?.classList.add(
+        "hidden"
+    );
+
+    dangerPanel?.classList.add(
+        "hidden"
+    );
+
+    if (moreTitle) {
+        moreTitle.textContent =
+            "Mon coaching";
+    }
+
+    if (moreDescription) {
+        moreDescription.textContent =
+            "Retrouve ton profil de coaching et tes événements.";
+    }
+}
+
+function requireAdminAction(
+    actionLabel = "cette action"
+) {
+    if (isAdminUser()) {
+        return true;
+    }
+
+    window.alert(
+        `Accès refusé : ${actionLabel} est réservé à l'administrateur.`
+    );
+
+    return false;
 }
 
 function renderAccountState() {
@@ -475,6 +651,9 @@ function renderAccountState() {
         loggedOut.classList.remove("hidden");
         loggedIn.classList.add("hidden");
         chip.textContent = "À CONFIGURER";
+
+        renderTopAccountButton();
+        renderRoleVisibility();
         return;
     }
 
@@ -492,6 +671,82 @@ function renderAccountState() {
         loggedOut.classList.remove("hidden");
         loggedIn.classList.add("hidden");
         chip.textContent = "LOCAL";
+    }
+
+    renderTopAccountButton();
+    renderRoleVisibility();
+}
+
+function renderTopAccountButton() {
+    const button =
+        document.getElementById(
+            "account-shortcut"
+        );
+
+    const dot =
+        document.getElementById(
+            "top-sync-dot"
+        );
+
+    const label =
+        document.getElementById(
+            "top-sync-label"
+        );
+
+    if (
+        !button ||
+        !dot ||
+        !label
+    ) {
+        return;
+    }
+
+    button.classList.remove(
+        "logged-out",
+        "config-needed",
+        "offline"
+    );
+
+    if (!isSupabaseConfigured()) {
+        button.classList.add(
+            "config-needed"
+        );
+
+        dot.className =
+            "cloud-dot local";
+
+        label.textContent =
+            "Configurer";
+
+        return;
+    }
+
+    if (!currentUser) {
+        button.classList.add(
+            "logged-out"
+        );
+
+        dot.className =
+            "cloud-dot synced";
+
+        label.textContent =
+            "Se connecter";
+
+        return;
+    }
+
+    if (!navigator.onLine) {
+        button.classList.add(
+            "offline"
+        );
+
+        dot.className =
+            "cloud-dot local";
+
+        label.textContent =
+            "Hors ligne";
+
+        return;
     }
 }
 
@@ -514,6 +769,11 @@ function setCloudStatus(
         document.getElementById(
             "account-sync-detail"
         );
+
+    if (!currentUser) {
+        renderTopAccountButton();
+        return;
+    }
 
     if (dot) {
         dot.className =
@@ -725,7 +985,8 @@ function requestCloudSync(
 ) {
     if (
         !currentUser ||
-        !supabaseClient
+        !supabaseClient ||
+        !navigator.onLine
     ) {
         return;
     }
@@ -1251,6 +1512,16 @@ async function syncWithCloud(
 
         renderEverything();
 
+        lastSuccessfulCloudSync =
+            Date.now();
+
+        localStorage.setItem(
+            STORAGE_KEYS.lastCloudSyncAt,
+            String(
+                lastSuccessfulCloudSync
+            )
+        );
+
         setCloudStatus(
             "synced",
             "Cloud ✓",
@@ -1416,10 +1687,7 @@ async function signOut() {
     currentUser = null;
     renderAccountState();
 
-    setCloudStatus(
-        "local",
-        "Local"
-    );
+    renderTopAccountButton();
 
     showAccountStatus(
         "Déconnecté. La copie locale reste disponible sur cet appareil."
@@ -2517,6 +2785,12 @@ function createBackupFile() {
 }
 
 function downloadBackup() {
+    if (!requireAdminAction(
+        "l'export de sauvegarde"
+    )) {
+        return;
+    }
+
     const file = createBackupFile();
     const url = URL.createObjectURL(file);
     const link = document.createElement("a");
@@ -2536,6 +2810,12 @@ function downloadBackup() {
 }
 
 async function shareBackup() {
+    if (!requireAdminAction(
+        "le partage de sauvegarde"
+    )) {
+        return;
+    }
+
     const file = createBackupFile();
 
     if (
@@ -2572,6 +2852,12 @@ async function shareBackup() {
 }
 
 async function importBackup() {
+    if (!requireAdminAction(
+        "l'import de sauvegarde"
+    )) {
+        return;
+    }
+
     if (!selectedImportFile) {
         showBackupStatus(
             "Choisis d'abord un fichier JSON.",
@@ -3145,6 +3431,12 @@ document.addEventListener("click", (event) => {
 document
     .getElementById("reset-data-button")
     .addEventListener("click", async () => {
+        if (!requireAdminAction(
+            "la réinitialisation"
+        )) {
+            return;
+        }
+
         const confirmed = window.confirm(
             "Cette action supprime tous les matchs, tournois et le profil de YGO Coach. Continuer ?"
         );
@@ -3200,8 +3492,53 @@ document
 
 document
     .getElementById("account-shortcut")
-    .addEventListener("click", () => {
-        goToPage("more");
+    .addEventListener("click", async () => {
+        if (!currentUser) {
+            goToPage("more");
+
+            renderRoleVisibility();
+
+            window.setTimeout(() => {
+                document
+                    .getElementById(
+                        "account-panel"
+                    )
+                    ?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+            }, 180);
+
+            return;
+        }
+
+        if (isAdminUser()) {
+            goToPage("more");
+
+            renderRoleVisibility();
+
+            window.setTimeout(() => {
+                document
+                    .getElementById(
+                        "account-panel"
+                    )
+                    ?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+            }, 180);
+
+            return;
+        }
+
+        const shouldSignOut =
+            window.confirm(
+                `Connecté avec ${currentUser.email}.\n\nVeux-tu te déconnecter ?`
+            );
+
+        if (shouldSignOut) {
+            await signOut();
+        }
     });
 
 document
@@ -3232,6 +3569,7 @@ document
 toggleGameSection(2, false);
 toggleGameSection(3, false);
 renderEverything();
+renderRoleVisibility();
 initializeCloudAuth();
 
 if ("serviceWorker" in navigator) {

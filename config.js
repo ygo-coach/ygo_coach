@@ -15,6 +15,6 @@ IMPORTANT :
 */
 
 window.YGO_CONFIG = {
-    supabaseUrl: "https://ihvptanevpuufnvyouth.supabase.co",
-    supabaseKey: "sb_publishable_pWtO5YkR-edfOZOOZzlflw__sSn7QN9"
+    supabaseUrl: "",
+    supabaseKey: ""
 };

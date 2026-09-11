@@ -1,0 +1,11 @@
+{
+    "name": "YGO Coach",
+    "short_name": "YGO Coach",
+    "description": "YGO Coach - coaching Yu-Gi-Oh! avec compte et synchronisation cloud",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#0d2420",
+    "theme_color": "#0b2621",
+    "lang": "fr"
+}

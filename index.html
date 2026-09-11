@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    >
+    <meta name="theme-color" content="#0b2621">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="YGO Coach">
+
+    <title>YGO Coach V6 Cloud</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand-block">
+                <div class="brand-icon">🦉</div>
+
+                <div>
+                    <p class="eyebrow">LA CHOUETTE ACADÉMIE</p>
+                    <h1>YGO Coach</h1>
+                </div>
+            </div>
+
+            <button
+                id="account-shortcut"
+                class="cloud-pill"
+                type="button"
+                title="Compte et synchronisation"
+            >
+                <span id="top-sync-dot" class="cloud-dot local"></span>
+                <span id="top-sync-label">Local</span>
+            </button>
+        </header>
+
+        <main class="content">
+            <section id="page-home" class="page active">
+                <div class="hero-card">
+                    <div class="hero-copy">
+                        <p class="hero-label">Performance globale</p>
+                        <h2 id="home-winrate">0 %</h2>
+                        <p id="home-record">0 victoire • 0 défaite</p>
+                    </div>
+
+                    <div class="hero-orb">
+                        <span id="home-total-matches">0</span>
+                        <small>matchs</small>
+                    </div>
+                </div>
+
+                <div class="quick-grid">
+                    <button
+                        class="quick-card"
+                        type="button"
+                        data-go-page="add"
+                    >
+                        <span class="quick-icon">＋</span>
+
+                        <span>
+                            <strong>Nouvelle ronde</strong>
+                            <small>G1 / G2 / G3</small>
+                        </span>
+                    </button>
+
+                    <button
+                        class="quick-card"
+                        type="button"
+                        data-go-page="stats"
+                    >
+                        <span class="quick-icon">⌁</span>
+
+                        <span>
+                            <strong>Mes analyses</strong>
+                            <small>Stats & coaching</small>
+                        </span>
+                    </button>
+                </div>
+
+                <div class="coach-card">
+                    <div class="coach-avatar">🦉</div>
+
+                    <div class="coach-content">
+                        <div class="coach-heading">
+                            <p class="section-kicker">Analyse du coach</p>
+                            <span class="live-dot"></span>
+                        </div>
+
+                        <p id="coach-message">
+                            Ajoute quelques matchs pour que je puisse commencer à analyser ton jeu.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <article class="mini-stat">
+                        <span>G1</span>
+                        <strong id="home-g1-winrate">-</strong>
+                        <small>Winrate</small>
+                    </article>
+
+                    <article class="mini-stat">
+                        <span>Après side</span>
+                        <strong id="home-post-side-winrate">-</strong>
+                        <small>G2 + G3</small>
+                    </article>
+
+                    <article class="mini-stat">
+                        <span>Going second</span>
+                        <strong id="home-second-winrate">-</strong>
+                        <small>Par game</small>
+                    </article>
+                </div>
+
+                <div class="section-header">
+                    <div>
+                        <p class="section-kicker">Derniers matchs</p>
+                        <h3>Ta progression récente</h3>
+                    </div>
+
+                    <button
+                        class="link-button"
+                        data-go-page="matches"
+                        type="button"
+                    >
+                        Voir tout
+                    </button>
+                </div>
+
+                <div id="recent-matches" class="stack">
+                    <div class="empty-state">
+                        Aucun match enregistré.
+                    </div>
+                </div>
+            </section>
+
+            <section id="page-add" class="page">
+                <div class="page-heading">
+                    <p class="section-kicker">Nouvelle ronde</p>
+                    <h2 id="match-form-title">Ajouter un match</h2>
+                    <p>
+                        Le résultat global reste rapide à saisir, puis tu peux détailler chaque game pour enrichir le coaching.
+                    </p>
+                </div>
+
+                <form id="match-form" class="form-card">
+                    <div class="form-section-title">
+                        <span>01</span>
+                        <div>
+                            <strong>Résumé du match</strong>
+                            <small>Informations générales</small>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="field-group">
+                            <label for="my-deck">Mon deck</label>
+
+                            <input
+                                id="my-deck"
+                                name="myDeck"
+                                type="text"
+                                placeholder="Artmage Power Patron"
+                                autocomplete="off"
+                                required
+                            >
+                        </div>
+
+                        <div class="field-group">
+                            <label for="opponent-deck">Deck adverse</label>
+
+                            <input
+                                id="opponent-deck"
+                                name="opponentDeck"
+                                type="text"
+                                placeholder="K9, Elfnote..."
+                                autocomplete="off"
+                                required
+                            >
+                        </div>
+
+                        <div class="field-group">
+                            <label for="result">Résultat</label>
+
+                            <select id="result" name="result">
+                                <option value="win">Victoire</option>
+                                <option value="loss">Défaite</option>
+                            </select>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="score">Score</label>
+
+                            <select id="score" name="score">
+                                <option value="2-0">2 - 0</option>
+                                <option value="2-1">2 - 1</option>
+                                <option value="1-2">1 - 2</option>
+                                <option value="0-2">0 - 2</option>
+                            </select>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="dice">Dice roll</label>
+
+                            <select id="dice" name="dice">
+                                <option value="win">Gagné</option>
+                                <option value="loss">Perdu</option>
+                            </select>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="tournament">Tournoi</label>
+
+                            <select id="tournament" name="tournament">
+                                <option value="">Aucun tournoi</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title games-title">
+                        <span>02</span>
+                        <div>
+                            <strong>Détail des games</strong>
+                            <small>Optionnel mais recommandé pour le coaching</small>
+                        </div>
+                    </div>
+
+                    <div class="game-editor">
+                        <div class="game-editor-head">
+                            <div>
+                                <span class="game-number">G1</span>
+                                <strong>Game 1</strong>
+                            </div>
+
+                            <span class="required-pill">principale</span>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="field-group">
+                                <label for="g1-position">Position</label>
+
+                                <select id="g1-position" name="g1Position">
+                                    <option value="first">Premier</option>
+                                    <option value="second">Second</option>
+                                </select>
+                            </div>
+
+                            <div class="field-group">
+                                <label for="g1-result">Résultat G1</label>
+
+                                <select id="g1-result" name="g1Result">
+                                    <option value="">Non renseigné</option>
+                                    <option value="win">Victoire</option>
+                                    <option value="loss">Défaite</option>
+                                </select>
+                            </div>
+
+                            <div class="field-group span-two">
+                                <label for="g1-reason">Cause / point clé</label>
+
+                                <select id="g1-reason" name="g1Reason">
+                                    <option value="">Non renseigné</option>
+                                    <option value="brick">Brick / main injouable</option>
+                                    <option value="going-second">Going second difficile</option>
+                                    <option value="handtrap">Handtraps</option>
+                                    <option value="boardbreaker">Board breakers</option>
+                                    <option value="misplay">Misplay</option>
+                                    <option value="time">Time</option>
+                                    <option value="matchup">Connaissance du matchup</option>
+                                    <option value="opponent">Très bon play adverse</option>
+                                    <option value="other">Autre</option>
+                                </select>
+                            </div>
+
+                            <div class="field-group span-two">
+                                <label for="g1-note">Note G1</label>
+
+                                <textarea
+                                    id="g1-note"
+                                    name="g1Note"
+                                    placeholder="Ex : Ash sur la bonne choke point, puis je n'ai pas pu repartir..."
+                                ></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="game-editor">
+                        <div class="game-editor-head">
+                            <div>
+                                <span class="game-number">G2</span>
+                                <strong>Game 2</strong>
+                            </div>
+
+                            <label class="toggle">
+                                <input id="g2-played" name="g2Played" type="checkbox">
+                                <span></span>
+                                <small>Jouée</small>
+                            </label>
+                        </div>
+
+                        <div id="g2-fields" class="game-fields disabled-section">
+                            <div class="form-grid">
+                                <div class="field-group">
+                                    <label for="g2-position">Position</label>
+
+                                    <select id="g2-position" name="g2Position" disabled>
+                                        <option value="first">Premier</option>
+                                        <option value="second">Second</option>
+                                    </select>
+                                </div>
+
+                                <div class="field-group">
+                                    <label for="g2-result">Résultat G2</label>
+
+                                    <select id="g2-result" name="g2Result" disabled>
+                                        <option value="">Non renseigné</option>
+                                        <option value="win">Victoire</option>
+                                        <option value="loss">Défaite</option>
+                                    </select>
+                                </div>
+
+                                <div class="field-group span-two">
+                                    <label for="g2-reason">Cause / point clé</label>
+
+                                    <select id="g2-reason" name="g2Reason" disabled>
+                                        <option value="">Non renseigné</option>
+                                        <option value="brick">Brick / main injouable</option>
+                                        <option value="going-second">Going second difficile</option>
+                                        <option value="side">Side deck</option>
+                                        <option value="handtrap">Handtraps</option>
+                                        <option value="boardbreaker">Board breakers</option>
+                                        <option value="misplay">Misplay</option>
+                                        <option value="time">Time</option>
+                                        <option value="matchup">Connaissance du matchup</option>
+                                        <option value="opponent">Très bon play adverse</option>
+                                        <option value="other">Autre</option>
+                                    </select>
+                                </div>
+
+                                <div class="field-group">
+                                    <label for="g2-side-in">Side IN</label>
+
+                                    <textarea
+                                        id="g2-side-in"
+                                        name="g2SideIn"
+                                        placeholder="Droll, Dark Ruler..."
+                                        disabled
+                                    ></textarea>
+                                </div>
+
+                                <div class="field-group">
+                                    <label for="g2-side-out">Side OUT</label>
+
+                                    <textarea
+                                        id="g2-side-out"
+                                        name="g2SideOut"
+                                        placeholder="Cartes sorties..."
+                                        disabled
+                                    ></textarea>
+                                </div>
+
+                                <div class="field-group span-two">
+                                    <label for="g2-note">Note G2</label>
+
+                                    <textarea
+                                        id="g2-note"
+                                        name="g2Note"
+                                        placeholder="Ce qui a fonctionné ou non après side..."
+                                        disabled
+                                    ></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="game-editor">
+                        <div class="game-editor-head">
+                            <div>
+                                <span class="game-number">G3</span>
+                                <strong>Game 3</strong>
+                            </div>
+
+                            <label class="toggle">
+                                <input id="g3-played" name="g3Played" type="checkbox">
+                                <span></span>
+                                <small>Jouée</small>
+                            </label>
+                        </div>
+
+                        <div id="g3-fields" class="game-fields disabled-section">
+                            <div class="form-grid">
+                                <div class="field-group">
+                                    <label for="g3-position">Position</label>
+
+                                    <select id="g3-position" name="g3Position" disabled>
+                                        <option value="first">Premier</option>
+                                        <option value="second">Second</option>
+                                    </select>
+                                </div>
+
+                                <div class="field-group">
+                                    <label for="g3-result">Résultat G3</label>
+
+                                    <select id="g3-result" name="g3Result" disabled>
+                                        <option value="">Non renseigné</option>
+                                        <option value="win">Victoire</option>
+                                        <option value="loss">Défaite</option>
+                                    </select>
+                                </div>
+
+                                <div class="field-group span-two">
+                                    <label for="g3-reason">Cause / point clé</label>
+
+                                    <select id="g3-reason" name="g3Reason" disabled>
+                                        <option value="">Non renseigné</option>
+                                        <option value="brick">Brick / main injouable</option>
+                                        <option value="going-second">Going second difficile</option>
+                                        <option value="side">Side deck</option>
+                                        <option value="handtrap">Handtraps</option>
+                                        <option value="boardbreaker">Board breakers</option>
+                                        <option value="misplay">Misplay</option>
+                                        <option value="time">Time</option>
+                                        <option value="matchup">Connaissance du matchup</option>
+                                        <option value="opponent">Très bon play adverse</option>
+                                        <option value="other">Autre</option>
+                                    </select>
+                                </div>
+
+                                <div class="field-group">
+                                    <label for="g3-side-in">Side IN</label>
+
+                                    <textarea
+                                        id="g3-side-in"
+                                        name="g3SideIn"
+                                        placeholder="Droll, Dark Ruler..."
+                                        disabled
+                                    ></textarea>
+                                </div>
+
+                                <div class="field-group">
+                                    <label for="g3-side-out">Side OUT</label>
+
+                                    <textarea
+                                        id="g3-side-out"
+                                        name="g3SideOut"
+                                        placeholder="Cartes sorties..."
+                                        disabled
+                                    ></textarea>
+                                </div>
+
+                                <div class="field-group span-two">
+                                    <label for="g3-note">Note G3</label>
+
+                                    <textarea
+                                        id="g3-note"
+                                        name="g3Note"
+                                        placeholder="Décision importante, erreur, time..."
+                                        disabled
+                                    ></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">
+                        <span>03</span>
+                        <div>
+                            <strong>Résumé final</strong>
+                            <small>Pour garder le contexte du match</small>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="note">Note générale</label>
+
+                        <textarea
+                            id="note"
+                            name="note"
+                            placeholder="Résumé global de la ronde..."
+                        ></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button
+                            id="submit-match-button"
+                            class="primary-button"
+                            type="submit"
+                        >
+                            Enregistrer le match
+                        </button>
+
+                        <button
+                            id="cancel-edit-button"
+                            class="secondary-button hidden"
+                            type="button"
+                        >
+                            Annuler la modification
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="page-matches" class="page">
+                <div class="page-heading">
+                    <p class="section-kicker">Historique</p>
+                    <h2>Tous les matchs</h2>
+                    <p>
+                        Recherche, filtre, relis les games et corrige une ronde à tout moment.
+                    </p>
+                </div>
+
+                <div class="filter-card">
+                    <div class="field-group">
+                        <label for="match-search">Rechercher un matchup</label>
+
+                        <input
+                            id="match-search"
+                            type="search"
+                            placeholder="Ex : Elfnote"
+                        >
+                    </div>
+
+                    <div class="field-group">
+                        <label for="match-filter">Filtre</label>
+
+                        <select id="match-filter">
+                            <option value="all">Tous les matchs</option>
+                            <option value="win">Victoires</option>
+                            <option value="loss">Défaites</option>
+                            <option value="first">G1 en premier</option>
+                            <option value="second">G1 en second</option>
+                            <option value="detailed">Avec détail des games</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="matches-list" class="stack">
+                    <div class="empty-state">
+                        Aucun match enregistré.
+                    </div>
+                </div>
+            </section>
+
+            <section id="page-stats" class="page">
+                <div class="page-heading">
+                    <p class="section-kicker">Analyse</p>
+                    <h2>Statistiques avancées</h2>
+                    <p>
+                        Les anciennes rondes restent dans le winrate global. Les stats par game utilisent uniquement les matchs détaillés.
+                    </p>
+                </div>
+
+                <div class="stats-grid">
+                    <article class="stat-card stat-card-main">
+                        <span>Matchs</span>
+                        <strong id="stat-global">0 %</strong>
+                        <small>Winrate global</small>
+                    </article>
+
+                    <article class="stat-card">
+                        <span>Toutes les games</span>
+                        <strong id="stat-games">-</strong>
+                        <small>Games détaillées</small>
+                    </article>
+
+                    <article class="stat-card">
+                        <span>G1</span>
+                        <strong id="stat-g1">-</strong>
+                        <small>Avant side</small>
+                    </article>
+
+                    <article class="stat-card">
+                        <span>Après side</span>
+                        <strong id="stat-post-side">-</strong>
+                        <small>G2 + G3</small>
+                    </article>
+
+                    <article class="stat-card">
+                        <span>Going first</span>
+                        <strong id="stat-first">-</strong>
+                        <small>Par game</small>
+                    </article>
+
+                    <article class="stat-card">
+                        <span>Going second</span>
+                        <strong id="stat-second">-</strong>
+                        <small>Par game</small>
+                    </article>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Matchups</p>
+                            <h3>Performance par deck</h3>
+                        </div>
+
+                        <span class="panel-chip">META</span>
+                    </div>
+
+                    <div id="matchup-stats" class="stack"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Side deck</p>
+                            <h3>Cartes sidées IN</h3>
+                        </div>
+
+                        <span class="panel-chip">SIDE</span>
+                    </div>
+
+                    <div id="side-stats" class="stack"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Axes de progression</p>
+                            <h3>Causes récurrentes</h3>
+                        </div>
+
+                        <span class="panel-chip">COACH</span>
+                    </div>
+
+                    <div id="reason-stats" class="stack"></div>
+                </div>
+            </section>
+
+            <section id="page-more" class="page">
+                <div class="page-heading">
+                    <p class="section-kicker">Mon espace</p>
+                    <h2>Compte, cloud & données</h2>
+                    <p>
+                        Connecte-toi une fois : tes matchs, tournois et ton profil se synchronisent ensuite automatiquement entre PC et iPhone.
+                    </p>
+                </div>
+
+
+                <div class="panel account-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Compte</p>
+                            <h3>Synchronisation cloud</h3>
+                        </div>
+
+                        <span id="account-cloud-chip" class="panel-chip">LOCAL</span>
+                    </div>
+
+                    <div id="cloud-config-warning" class="cloud-warning hidden">
+                        Supabase n'est pas encore configuré. Renseigne <strong>config.js</strong> puis recharge la page.
+                    </div>
+
+                    <div id="account-logged-out">
+                        <p class="panel-copy">
+                            Crée un compte gratuit ou connecte-toi. Au premier login, tes données V5 présentes sur cet appareil seront fusionnées avec ton compte.
+                        </p>
+
+                        <form id="auth-form" class="profile-form">
+                            <div class="field-group">
+                                <label for="auth-email">Email</label>
+
+                                <input
+                                    id="auth-email"
+                                    name="authEmail"
+                                    type="email"
+                                    autocomplete="email"
+                                    placeholder="toi@email.fr"
+                                    required
+                                >
+                            </div>
+
+                            <div class="field-group">
+                                <label for="auth-password">Mot de passe</label>
+
+                                <input
+                                    id="auth-password"
+                                    name="authPassword"
+                                    type="password"
+                                    autocomplete="current-password"
+                                    placeholder="6 caractères minimum"
+                                    minlength="6"
+                                    required
+                                >
+                            </div>
+
+                            <div class="auth-actions">
+                                <button
+                                    id="sign-in-button"
+                                    class="primary-button"
+                                    type="submit"
+                                >
+                                    Se connecter
+                                </button>
+
+                                <button
+                                    id="sign-up-button"
+                                    class="secondary-button"
+                                    type="button"
+                                >
+                                    Créer mon compte
+                                </button>
+                            </div>
+
+                            <button
+                                id="forgot-password-button"
+                                class="text-action-button"
+                                type="button"
+                            >
+                                Mot de passe oublié
+                            </button>
+                        </form>
+                    </div>
+
+                    <div id="account-logged-in" class="hidden">
+                        <div class="account-identity">
+                            <div class="account-avatar">☁</div>
+
+                            <div>
+                                <strong id="account-email">-</strong>
+                                <small id="account-sync-detail">Synchronisation active</small>
+                            </div>
+                        </div>
+
+                        <div class="sync-actions">
+                            <button
+                                id="sync-now-button"
+                                class="primary-button"
+                                type="button"
+                            >
+                                Synchroniser maintenant
+                            </button>
+
+                            <button
+                                id="sign-out-button"
+                                class="secondary-button"
+                                type="button"
+                            >
+                                Se déconnecter
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="account-status-message" class="status-message hidden"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Profil</p>
+                            <h3>Mon coaching</h3>
+                        </div>
+
+                        <span class="panel-chip">PLAYER</span>
+                    </div>
+
+                    <form id="profile-form" class="profile-form">
+                        <div class="form-grid">
+                            <div class="field-group">
+                                <label for="profile-name">Pseudo</label>
+
+                                <input
+                                    id="profile-name"
+                                    name="profileName"
+                                    type="text"
+                                    placeholder="Félix"
+                                >
+                            </div>
+
+                            <div class="field-group">
+                                <label for="profile-deck">Deck principal</label>
+
+                                <input
+                                    id="profile-deck"
+                                    name="profileDeck"
+                                    type="text"
+                                    placeholder="Artmage Power Patron"
+                                >
+                            </div>
+
+                            <div class="field-group span-two">
+                                <label for="profile-goal">Objectif</label>
+
+                                <input
+                                    id="profile-goal"
+                                    name="profileGoal"
+                                    type="text"
+                                    placeholder="Ex : faire mon premier top en OTS"
+                                >
+                            </div>
+                        </div>
+
+                        <button class="primary-button" type="submit">
+                            Enregistrer mon profil
+                        </button>
+                    </form>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Tournois</p>
+                            <h3>Mes événements</h3>
+                        </div>
+
+                        <span class="panel-chip">ROAD TO CDF</span>
+                    </div>
+
+                    <form id="tournament-form" class="tournament-form">
+                        <div class="inline-form">
+                            <input
+                                id="tournament-name"
+                                type="text"
+                                placeholder="OTS Le Mans"
+                                required
+                            >
+
+                            <button
+                                class="primary-button small"
+                                type="submit"
+                            >
+                                Ajouter
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="tournaments-list" class="stack"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Sauvegarde</p>
+                            <h3>PC ↔ iPhone</h3>
+                        </div>
+
+                        <span class="panel-chip">SYNC</span>
+                    </div>
+
+                    <p class="panel-copy">
+                        Exporte toute ta base en un fichier JSON. Importe ensuite ce même fichier sur ton autre appareil.
+                    </p>
+
+                    <div class="backup-actions">
+                        <button id="export-button" class="primary-button" type="button">
+                            Exporter ma sauvegarde
+                        </button>
+
+                        <button id="share-button" class="secondary-button" type="button">
+                            Partager la sauvegarde
+                        </button>
+                    </div>
+
+                    <div class="import-box">
+                        <div class="field-group">
+                            <label for="import-mode">Méthode d'import</label>
+
+                            <select id="import-mode">
+                                <option value="merge">Fusionner avec mes données</option>
+                                <option value="replace">Remplacer mes données</option>
+                            </select>
+                        </div>
+
+                        <label class="file-picker">
+                            <input
+                                id="import-file"
+                                type="file"
+                                accept=".json,application/json"
+                            >
+
+                            <span>Choisir un fichier JSON</span>
+                        </label>
+
+                        <button
+                            id="import-button"
+                            class="secondary-button"
+                            type="button"
+                        >
+                            Importer la sauvegarde
+                        </button>
+                    </div>
+
+                    <div id="backup-status" class="status-message hidden"></div>
+                </div>
+
+                <div class="panel danger-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker danger-kicker">Zone sensible</p>
+                            <h3>Réinitialiser l'application</h3>
+                        </div>
+                    </div>
+
+                    <p class="panel-copy">
+                        Cette action supprime les données locales de YGO Coach sur cet appareil.
+                    </p>
+
+                    <button
+                        id="reset-data-button"
+                        class="danger-large-button"
+                        type="button"
+                    >
+                        Supprimer toutes mes données
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <nav class="bottom-nav" aria-label="Navigation principale">
+            <button class="nav-button active" data-page="home" type="button">
+                <span class="nav-icon">⌂</span>
+                <small>Accueil</small>
+            </button>
+
+            <button class="nav-button" data-page="add" type="button">
+                <span class="nav-icon nav-icon-plus">＋</span>
+                <small>Ajouter</small>
+            </button>
+
+            <button class="nav-button" data-page="matches" type="button">
+                <span class="nav-icon">⚔</span>
+                <small>Matchs</small>
+            </button>
+
+            <button class="nav-button" data-page="stats" type="button">
+                <span class="nav-icon">▥</span>
+                <small>Stats</small>
+            </button>
+
+            <button class="nav-button" data-page="more" type="button">
+                <span class="nav-icon">•••</span>
+                <small>Plus</small>
+            </button>
+        </nav>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

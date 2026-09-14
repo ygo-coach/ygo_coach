@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="YGO Coach">
 
-    <title>YGO Coach V6.4.1</title>
+    <title>YGO Coach V6.5</title>
 
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
@@ -1229,6 +1229,40 @@
                     </form>
 
                     <div id="tournaments-list" class="stack"></div>
+                </div>
+
+                <div
+                    id="tournament-summary-modal"
+                    class="event-summary-modal hidden"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="tournament-summary-title"
+                >
+                    <div
+                        class="event-summary-backdrop"
+                        data-close-tournament-summary
+                    ></div>
+
+                    <div class="event-summary-sheet">
+                        <div class="event-summary-toolbar">
+                            <button
+                                id="close-tournament-summary"
+                                class="event-summary-close"
+                                type="button"
+                                aria-label="Fermer le résumé du tournoi"
+                            >
+                                ×
+                            </button>
+
+                            <div>
+                                <p class="section-kicker">Résumé de l'événement</p>
+                                <h2 id="tournament-summary-title">Tournoi</h2>
+                                <p id="tournament-summary-date" class="event-summary-date"></p>
+                            </div>
+                        </div>
+
+                        <div id="tournament-summary-content"></div>
+                    </div>
                 </div>
 
                 <div id="backup-panel" class="panel hidden">

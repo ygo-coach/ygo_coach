@@ -18,7 +18,7 @@ const LEGACY_STORAGE_KEYS = {
     matches: "ygoMatches"
 };
 
-const APP_VERSION = "6.4.1";
+const APP_VERSION = "6.5";
 
 const ADMIN_EMAIL = "felixlefevre170@gmail.com";
 
@@ -5051,6 +5051,629 @@ function renderReasonStats() {
         .join("");
 }
 
+function getTournamentMatches(
+    tournamentId
+) {
+    return matches
+        .filter(
+            (match) =>
+                match.tournamentId ===
+                tournamentId
+        )
+        .slice()
+        .sort(
+            (a, b) =>
+                new Date(a.createdAt) -
+                new Date(b.createdAt)
+        );
+}
+
+function getEventDecks(
+    tournamentMatches
+) {
+    const grouped =
+        new Map();
+
+    tournamentMatches.forEach(
+        (match) => {
+            const name =
+                match.myDeck ||
+                "Deck non renseigné";
+
+            grouped.set(
+                name,
+                (grouped.get(name) || 0) +
+                    1
+            );
+        }
+    );
+
+    return Array.from(
+        grouped.entries()
+    )
+        .sort(
+            (a, b) =>
+                b[1] - a[1]
+        )
+        .map(
+            ([name, count]) => ({
+                name,
+                count
+            })
+        );
+}
+
+function getEventOpponentStats(
+    tournamentMatches
+) {
+    const grouped =
+        new Map();
+
+    tournamentMatches.forEach(
+        (match) => {
+            const name =
+                match.opponentDeck ||
+                "Deck inconnu";
+
+            const key =
+                normalizeDeckKey(name);
+
+            if (!grouped.has(key)) {
+                grouped.set(
+                    key,
+                    {
+                        name,
+                        matches: 0,
+                        wins: 0,
+                        losses: 0
+                    }
+                );
+            }
+
+            const item =
+                grouped.get(key);
+
+            item.matches += 1;
+
+            if (
+                match.result === "win"
+            ) {
+                item.wins += 1;
+            } else {
+                item.losses += 1;
+            }
+        }
+    );
+
+    return Array.from(
+        grouped.values()
+    )
+        .sort(
+            (a, b) =>
+                b.matches - a.matches ||
+                a.name.localeCompare(
+                    b.name,
+                    "fr",
+                    {
+                        sensitivity:
+                            "base"
+                    }
+                )
+        );
+}
+
+function getEventTopIssue(
+    tournamentMatches
+) {
+    const reasons =
+        new Map();
+
+    tournamentMatches
+        .flatMap(
+            (match) =>
+                match.games || []
+        )
+        .filter(
+            (game) =>
+                game.result === "loss" &&
+                game.reason
+        )
+        .forEach(
+            (game) => {
+                reasons.set(
+                    game.reason,
+                    (reasons.get(
+                        game.reason
+                    ) || 0) + 1
+                );
+            }
+        );
+
+    const top =
+        Array.from(
+            reasons.entries()
+        )
+            .sort(
+                (a, b) =>
+                    b[1] - a[1]
+            )[0];
+
+    if (!top) {
+        return null;
+    }
+
+    return {
+        reason: top[0],
+        count: top[1]
+    };
+}
+
+function renderTournamentSummary(
+    tournamentId
+) {
+    const tournament =
+        tournaments.find(
+            (item) =>
+                item.id === tournamentId
+        );
+
+    const content =
+        document.getElementById(
+            "tournament-summary-content"
+        );
+
+    if (
+        !tournament ||
+        !content
+    ) {
+        return;
+    }
+
+    const tournamentMatches =
+        getTournamentMatches(
+            tournamentId
+        );
+
+    const matchWins =
+        tournamentMatches.filter(
+            (match) =>
+                match.result === "win"
+        ).length;
+
+    const matchLosses =
+        tournamentMatches.length -
+        matchWins;
+
+    const games =
+        tournamentMatches.flatMap(
+            (match) =>
+                match.games || []
+        );
+
+    const gameWins =
+        games.filter(
+            (game) =>
+                game.result === "win"
+        ).length;
+
+    const gameLosses =
+        games.filter(
+            (game) =>
+                game.result === "loss"
+        ).length;
+
+    const g1Games =
+        games.filter(
+            (game) =>
+                game.number === 1
+        );
+
+    const postSideGames =
+        games.filter(
+            (game) =>
+                game.number >= 2
+        );
+
+    const firstGames =
+        games.filter(
+            (game) =>
+                game.position === "first"
+        );
+
+    const secondGames =
+        games.filter(
+            (game) =>
+                game.position === "second"
+        );
+
+    const diceWins =
+        tournamentMatches.filter(
+            (match) =>
+                match.dice === "win"
+        ).length;
+
+    const decks =
+        getEventDecks(
+            tournamentMatches
+        );
+
+    const opponentStats =
+        getEventOpponentStats(
+            tournamentMatches
+        );
+
+    const topIssue =
+        getEventTopIssue(
+            tournamentMatches
+        );
+
+    document.getElementById(
+        "tournament-summary-title"
+    ).textContent =
+        tournament.name;
+
+    document.getElementById(
+        "tournament-summary-date"
+    ).textContent =
+        `${formatDate(tournament.createdAt)} • ${tournamentMatches.length} ronde${tournamentMatches.length > 1 ? "s" : ""}`;
+
+    if (
+        tournamentMatches.length === 0
+    ) {
+        content.innerHTML = `
+            <div class="event-summary-empty">
+                <div class="event-summary-empty-icon">🏆</div>
+                <h3>Aucune ronde enregistrée</h3>
+                <p>
+                    Lors de ta prochaine ronde, sélectionne
+                    <strong>${escapeHtml(tournament.name)}</strong>
+                    dans le champ tournoi.
+                </p>
+            </div>
+        `;
+
+        return;
+    }
+
+    const matchWinrate =
+        winrateForMatches(
+            tournamentMatches
+        );
+
+    const gameWinrate =
+        winrateForGames(
+            games
+        );
+
+    const bestDeck =
+        decks[0];
+
+    const recordClass =
+        matchWins > matchLosses
+            ? "positive"
+            : matchWins < matchLosses
+                ? "negative"
+                : "neutral";
+
+    content.innerHTML = `
+        <section class="event-hero ${recordClass}">
+            <div>
+                <span class="event-hero-label">
+                    Résultat final
+                </span>
+
+                <strong class="event-record">
+                    ${matchWins}-${matchLosses}
+                </strong>
+
+                <span class="event-hero-sub">
+                    ${formatPercent(matchWinrate)} de victoires
+                </span>
+            </div>
+
+            <div class="event-winrate-ring">
+                <strong>
+                    ${matchWinrate ?? 0}%
+                </strong>
+                <small>WINRATE</small>
+            </div>
+        </section>
+
+        <section class="event-stat-grid">
+            <article class="event-stat-card">
+                <span>Rounds</span>
+                <strong>${tournamentMatches.length}</strong>
+                <small>${matchWins} V • ${matchLosses} D</small>
+            </article>
+
+            <article class="event-stat-card">
+                <span>Games</span>
+                <strong>${gameWins}-${gameLosses}</strong>
+                <small>${formatPercent(gameWinrate)}</small>
+            </article>
+
+            <article class="event-stat-card">
+                <span>G1</span>
+                <strong>${formatPercent(winrateForGames(g1Games))}</strong>
+                <small>${g1Games.length} game${g1Games.length > 1 ? "s" : ""}</small>
+            </article>
+
+            <article class="event-stat-card">
+                <span>Après side</span>
+                <strong>${formatPercent(winrateForGames(postSideGames))}</strong>
+                <small>${postSideGames.length} game${postSideGames.length > 1 ? "s" : ""}</small>
+            </article>
+
+            <article class="event-stat-card">
+                <span>Going first</span>
+                <strong>${formatPercent(winrateForGames(firstGames))}</strong>
+                <small>${firstGames.length} game${firstGames.length > 1 ? "s" : ""}</small>
+            </article>
+
+            <article class="event-stat-card">
+                <span>Going second</span>
+                <strong>${formatPercent(winrateForGames(secondGames))}</strong>
+                <small>${secondGames.length} game${secondGames.length > 1 ? "s" : ""}</small>
+            </article>
+        </section>
+
+        <section class="event-insights">
+            <article class="event-insight-card">
+                <span class="event-insight-icon">🎴</span>
+                <div>
+                    <small>Deck joué</small>
+                    <strong>
+                        ${escapeHtml(bestDeck?.name || "Non renseigné")}
+                    </strong>
+                    ${
+                        decks.length > 1
+                            ? `
+                                <p>
+                                    ${decks
+                                        .map(
+                                            (deck) =>
+                                                `${escapeHtml(deck.name)} ×${deck.count}`
+                                        )
+                                        .join(" • ")}
+                                </p>
+                            `
+                            : ""
+                    }
+                </div>
+            </article>
+
+            <article class="event-insight-card">
+                <span class="event-insight-icon">🎲</span>
+                <div>
+                    <small>Dés gagnés</small>
+                    <strong>
+                        ${diceWins}/${tournamentMatches.length}
+                    </strong>
+                    <p>
+                        ${formatPercent(
+                            percentage(
+                                diceWins,
+                                tournamentMatches.length
+                            )
+                        )}
+                    </p>
+                </div>
+            </article>
+
+            ${
+                topIssue
+                    ? `
+                        <article class="event-insight-card">
+                            <span class="event-insight-icon">🦉</span>
+                            <div>
+                                <small>Point à travailler</small>
+                                <strong>
+                                    ${escapeHtml(reasonLabel(topIssue.reason))}
+                                </strong>
+                                <p>
+                                    ${topIssue.count} game${topIssue.count > 1 ? "s" : ""} perdue${topIssue.count > 1 ? "s" : ""}
+                                </p>
+                            </div>
+                        </article>
+                    `
+                    : `
+                        <article class="event-insight-card">
+                            <span class="event-insight-icon">🦉</span>
+                            <div>
+                                <small>Coach</small>
+                                <strong>Aucun motif dominant</strong>
+                                <p>
+                                    Continue à renseigner la cause des défaites.
+                                </p>
+                            </div>
+                        </article>
+                    `
+            }
+        </section>
+
+        <section class="event-summary-section">
+            <div class="event-summary-section-head">
+                <div>
+                    <p class="section-kicker">Parcours</p>
+                    <h3>Ronde par ronde</h3>
+                </div>
+
+                <span class="panel-chip">
+                    ${matchWins}-${matchLosses}
+                </span>
+            </div>
+
+            <div class="event-round-list">
+                ${tournamentMatches
+                    .map(
+                        (match, index) => {
+                            const isWin =
+                                match.result ===
+                                "win";
+
+                            const gameRecord =
+                                (match.games || [])
+                                    .filter(
+                                        (game) =>
+                                            game.result === "win" ||
+                                            game.result === "loss"
+                                    );
+
+                            const gameWinsForMatch =
+                                gameRecord.filter(
+                                    (game) =>
+                                        game.result === "win"
+                                ).length;
+
+                            const gameLossesForMatch =
+                                gameRecord.filter(
+                                    (game) =>
+                                        game.result === "loss"
+                                ).length;
+
+                            return `
+                                <article class="event-round-card">
+                                    <div class="event-round-number">
+                                        R${index + 1}
+                                    </div>
+
+                                    <div class="event-round-main">
+                                        <div class="event-round-title-row">
+                                            <strong>
+                                                ${escapeHtml(match.opponentDeck)}
+                                            </strong>
+
+                                            <span class="event-round-result ${isWin ? "win" : "loss"}">
+                                                ${isWin ? "VICTOIRE" : "DÉFAITE"}
+                                                ${escapeHtml(match.score || `${gameWinsForMatch}-${gameLossesForMatch}`)}
+                                            </span>
+                                        </div>
+
+                                        <div class="event-round-meta">
+                                            <span>
+                                                ${escapeHtml(match.myDeck || "Deck non renseigné")}
+                                            </span>
+                                            <span>
+                                                G1 ${escapeHtml(positionLabel(match.position))}
+                                            </span>
+                                            <span>
+                                                Dé ${match.dice === "win" ? "gagné" : "perdu"}
+                                            </span>
+                                        </div>
+
+                                        ${
+                                            match.note
+                                                ? `
+                                                    <p class="event-round-note">
+                                                        ${escapeHtml(match.note)}
+                                                    </p>
+                                                `
+                                                : ""
+                                        }
+                                    </div>
+                                </article>
+                            `;
+                        }
+                    )
+                    .join("")}
+            </div>
+        </section>
+
+        <section class="event-summary-section">
+            <div class="event-summary-section-head">
+                <div>
+                    <p class="section-kicker">Matchups</p>
+                    <h3>Decks affrontés</h3>
+                </div>
+            </div>
+
+            <div class="event-matchup-list">
+                ${opponentStats
+                    .map(
+                        (item) => `
+                            <div class="event-matchup-row">
+                                <div>
+                                    <strong>
+                                        ${escapeHtml(item.name)}
+                                    </strong>
+
+                                    <small>
+                                        ${item.matches} rencontre${item.matches > 1 ? "s" : ""}
+                                    </small>
+                                </div>
+
+                                <span>
+                                    ${item.wins}-${item.losses}
+                                </span>
+                            </div>
+                        `
+                    )
+                    .join("")}
+            </div>
+        </section>
+    `;
+}
+
+function openTournamentSummary(
+    tournamentId
+) {
+    const modal =
+        document.getElementById(
+            "tournament-summary-modal"
+        );
+
+    if (!modal) {
+        return;
+    }
+
+    renderTournamentSummary(
+        tournamentId
+    );
+
+    modal.dataset.tournamentId =
+        tournamentId;
+
+    modal.classList.remove(
+        "hidden"
+    );
+
+    document.body.classList.add(
+        "event-summary-open"
+    );
+
+    window.setTimeout(
+        () => {
+            document.getElementById(
+                "close-tournament-summary"
+            )?.focus();
+        },
+        20
+    );
+}
+
+function closeTournamentSummary() {
+    const modal =
+        document.getElementById(
+            "tournament-summary-modal"
+        );
+
+    if (!modal) {
+        return;
+    }
+
+    modal.classList.add(
+        "hidden"
+    );
+
+    modal.removeAttribute(
+        "data-tournament-id"
+    );
+
+    document.body.classList.remove(
+        "event-summary-open"
+    );
+}
+
 function renderTournaments() {
     const select =
         document.getElementById("tournament");
@@ -5115,26 +5738,39 @@ function renderTournaments() {
                 tournamentMatches.length - wins;
 
             return `
-                <article class="tournament-card">
-                    <div class="tournament-top">
-                        <div>
-                            <h3 class="tournament-title">
-                                ${escapeHtml(tournament.name)}
-                            </h3>
+                <article class="tournament-card tournament-card-clickable">
+                    <button
+                        class="tournament-open-button"
+                        type="button"
+                        data-open-tournament="${escapeHtml(tournament.id)}"
+                        aria-label="Voir le résumé de ${escapeHtml(tournament.name)}"
+                    >
+                        <div class="tournament-top">
+                            <div>
+                                <h3 class="tournament-title">
+                                    ${escapeHtml(tournament.name)}
+                                </h3>
 
-                            <p class="tournament-meta">
-                                ${formatDate(tournament.createdAt)}
-                                • ${wins}-${losses}
-                                • ${tournamentMatches.length} ronde${tournamentMatches.length > 1 ? "s" : ""}
-                            </p>
+                                <p class="tournament-meta">
+                                    ${formatDate(tournament.createdAt)}
+                                    • ${wins}-${losses}
+                                    • ${tournamentMatches.length} ronde${tournamentMatches.length > 1 ? "s" : ""}
+                                </p>
+                            </div>
+
+                            <div class="tournament-card-score">
+                                <strong>
+                                    ${formatPercent(winrateForMatches(tournamentMatches))}
+                                </strong>
+
+                                <span>
+                                    Voir le résumé →
+                                </span>
+                            </div>
                         </div>
+                    </button>
 
-                        <strong>
-                            ${formatPercent(winrateForMatches(tournamentMatches))}
-                        </strong>
-                    </div>
-
-                    <div class="match-actions">
+                    <div class="match-actions tournament-actions">
                         <button
                             class="danger-button"
                             type="button"
@@ -6784,6 +7420,31 @@ document
     .addEventListener("click", importBackup);
 
 document.addEventListener("click", (event) => {
+    const openTournamentButton =
+        event.target.closest(
+            "[data-open-tournament]"
+        );
+
+    if (openTournamentButton) {
+        openTournamentSummary(
+            openTournamentButton.dataset
+                .openTournament
+        );
+
+        return;
+    }
+
+    const closeTournamentButton =
+        event.target.closest(
+            "[data-close-tournament-summary]"
+        );
+
+    if (closeTournamentButton) {
+        closeTournamentSummary();
+
+        return;
+    }
+
     const editButton = event.target.closest(
         "[data-edit-match]"
     );
@@ -6853,6 +7514,17 @@ document.addEventListener("click", (event) => {
                     tournament.id !== id
             );
 
+        if (
+            document
+                .getElementById(
+                    "tournament-summary-modal"
+                )
+                ?.dataset
+                .tournamentId === id
+        ) {
+            closeTournamentSummary();
+        }
+
         markTournamentDeleted(id);
 
         const affectedMatchIds = [];
@@ -6882,6 +7554,33 @@ document.addEventListener("click", (event) => {
         renderEverything();
     }
 });
+
+document
+    .getElementById(
+        "close-tournament-summary"
+    )
+    .addEventListener(
+        "click",
+        closeTournamentSummary
+    );
+
+document.addEventListener(
+    "keydown",
+    (event) => {
+        if (
+            event.key === "Escape" &&
+            !document
+                .getElementById(
+                    "tournament-summary-modal"
+                )
+                .classList.contains(
+                    "hidden"
+                )
+        ) {
+            closeTournamentSummary();
+        }
+    }
+);
 
 document
     .getElementById("reset-data-button")

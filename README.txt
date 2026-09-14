@@ -1,93 +1,92 @@
-YGO COACH V6.4.1 - BASE DE CARTES FR / EN
+YGO COACH V6.5 - RÉSUMÉ DES ÉVÉNEMENTS
 
-Cette version part de la V6.4 et conserve :
-    - Deck Builder TCG
-    - Main / Extra / Side Deck
-    - Side rapide
-    - mains de départ
-    - coaching basé sur les mains
-    - base communautaire de decks adverses
-    - synchronisation Supabase
-    - accès administrateur
+NOUVEAUTÉ PRINCIPALE
 
-NOUVEAUTÉ V6.4.1
+Dans Plus > Mes événements, chaque tournoi est maintenant cliquable.
 
-Dans Profil > Préférences cartes :
+Quand tu ouvres un tournoi, YGO Coach affiche un résumé complet :
 
-    Français
-    English
+    - résultat final du tournoi
+    - winrate matchs
+    - nombre de rondes
+    - score global des games
+    - winrate G1
+    - winrate après side
+    - winrate going first
+    - winrate going second
+    - ratio de dés gagnés
+    - deck joué pendant l'événement
+    - principal point à travailler
+    - détail ronde par ronde
+    - deck adverse de chaque ronde
+    - score de chaque ronde
+    - position G1 et résultat du dé
+    - notes de match
+    - récapitulatif des matchups affrontés
 
-Le choix est enregistré dans le profil et se synchronise entre les appareils.
+EXEMPLE
 
-FRANÇAIS
+    WCQ Caen
+    4-1
+    80 % de winrate
 
-La base YGOPRODeck est chargée avec :
+    R1  Lunalight       Victoire 2-1
+    R2  Mitsurugi      Victoire 2-0
+    R3  K9             Défaite 1-2
+    R4  Elfnote        Victoire 2-1
+    R5  LADR           Victoire 2-0
 
-    https://db.ygoprodeck.com/api/v7/cardinfo.php?format=tcg&language=fr
+Les statistiques sont calculées automatiquement depuis les matchs déjà liés
+au tournoi. Il n'y a rien à saisir une deuxième fois.
 
-Les recherches et le Deck Builder utilisent alors les noms français disponibles
-dans la base YGOPRODeck.
+FONCTIONNEMENT
 
-ANGLAIS
+Lors de la création d'une ronde, continue simplement à sélectionner le tournoi
+dans le champ prévu.
 
-La base utilise :
+YGO Coach relie alors le match au tournoi grâce à tournamentId.
 
-    https://db.ygoprodeck.com/api/v7/cardinfo.php?format=tcg
+Plus tard :
 
-COMPATIBILITÉ DES DECKLISTS
-
-Les cartes de tes decks sont reconnues grâce à leur ID YGOPRODeck.
-
-Cela permet de passer de :
-
-    Ash Blossom & Joyous Spring
-
-à son nom français disponible dans la base, sans supprimer la carte de la decklist.
-
-Quand une langue est chargée, YGO Coach actualise les noms des cartes déjà
-présentes dans Main / Extra / Side à partir de leur ID.
-
-CACHE
-
-Chaque langue possède son propre cache IndexedDB :
-
-    ygoCoachCardDatabase-fr
-    ygoCoachCardDatabase-en
-
-Le cache reste valable 7 jours.
-
-Le bouton "Mettre à jour" force une actualisation de la langue actuellement
-sélectionnée.
+    Plus
+    > Mes événements
+    > cliquer sur le tournoi
+    > résumé complet
 
 AUCUNE MIGRATION SUPABASE
 
-Aucune nouvelle table ou requête SQL n'est nécessaire.
+Aucune nouvelle table SQL n'est nécessaire.
 
-Le choix de langue est enregistré dans :
+La V6.5 utilise uniquement les données déjà présentes dans :
+    ygo_matches
+    ygo_tournaments
 
-    profile.cardLanguage
+La synchronisation PC / iPhone continue donc de fonctionner normalement.
 
-Les decklists restent dans :
+TOUTES LES FONCTIONNALITÉS PRÉCÉDENTES RESTENT PRÉSENTES
 
-    profile.decks[].mainDeck
-    profile.decks[].extraDeck
-    profile.decks[].sideDeck
-
-CONFIG.JS
-
-La configuration publishable Supabase du projet est déjà présente.
-
-Ne jamais mettre une clé service_role ou sb_secret_... dans config.js.
+    - comptes Supabase
+    - synchronisation cloud optimisée
+    - compte administrateur
+    - Profil
+    - Mes decks
+    - Deck Builder TCG FR / EN
+    - Main / Extra / Side
+    - mains de départ
+    - Side rapide
+    - coach
+    - base communautaire de decks adverses
 
 DÉPLOIEMENT
 
-Remplace les fichiers de ton projet puis :
+Remplace les fichiers du projet puis :
 
     git add .
-    git commit -m "YGO Coach V6.4.1 cartes FR EN"
+    git commit -m "YGO Coach V6.5 resumes tournois"
     git push
 
-Si le navigateur garde l'ancienne version :
+GitHub Pages redéploiera automatiquement.
 
+Si l'ancienne version reste affichée :
     PC : Ctrl + F5
     iPhone : fermer complètement la PWA puis la rouvrir

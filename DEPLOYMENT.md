@@ -232,3 +232,21 @@ git push
 ```
 
 Le service worker utilise le cache `ygo-coach-v6-4-1`.
+
+
+## V6.5 — Résumé des événements
+
+Aucune migration Supabase n'est nécessaire.
+
+Les résumés sont calculés directement depuis les matchs dont `tournamentId`
+correspond au tournoi sélectionné.
+
+Pour publier :
+
+```powershell
+git add .
+git commit -m "YGO Coach V6.5 resumes tournois"
+git push
+```
+
+Le service worker utilise maintenant le cache `ygo-coach-v6-5`.

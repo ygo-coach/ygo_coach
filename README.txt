@@ -103,20 +103,3 @@ Cette version retravaille surtout le style visuel :
     - résumé de tournoi restylé
 
 Aucune migration Supabase n'est nécessaire.
-
-
-V6.5.3 — RÉSUMÉ AU FORMAT TÉLÉPHONE UNIQUEMENT
-
-L'application reste responsive normalement sur PC.
-
-Seul le résumé d'événement est forcé dans un cadre téléphone :
-    - environ 390 px de large sur PC
-    - centré à l'écran
-    - plein écran sur téléphone
-    - format pensé pour capture / TikTok / Shorts
-    - contenu compacté sur un seul écran
-
-La barre de navigation principale est aussi forcée en position fixed
-pour rester au bas du viewport.
-
-Aucune migration Supabase n'est nécessaire.

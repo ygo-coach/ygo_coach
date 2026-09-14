@@ -18,7 +18,7 @@ const LEGACY_STORAGE_KEYS = {
     matches: "ygoMatches"
 };
 
-const APP_VERSION = "6.5.3";
+const APP_VERSION = "6.5.1";
 
 const ADMIN_EMAIL = "felixlefevre170@gmail.com";
 
@@ -5356,145 +5356,260 @@ function renderTournamentSummary(
                 : "neutral";
 
     content.innerHTML = `
-        <section class="event-phone-summary">
-            <header class="event-phone-header">
+        <section class="event-hero ${recordClass}">
+            <div>
+                <span class="event-hero-label">
+                    Résultat final
+                </span>
+
+                <strong class="event-record">
+                    ${matchWins}-${matchLosses}
+                </strong>
+
+                <span class="event-hero-sub">
+                    ${formatPercent(matchWinrate)} de victoires
+                </span>
+            </div>
+
+            <div class="event-winrate-ring">
+                <strong>
+                    ${matchWinrate ?? 0}%
+                </strong>
+                <small>WINRATE</small>
+            </div>
+        </section>
+
+        <section class="event-stat-grid">
+            <article class="event-stat-card">
+                <span>Rounds</span>
+                <strong>${tournamentMatches.length}</strong>
+                <small>${matchWins} V • ${matchLosses} D</small>
+            </article>
+
+            <article class="event-stat-card">
+                <span>Games</span>
+                <strong>${gameWins}-${gameLosses}</strong>
+                <small>${formatPercent(gameWinrate)}</small>
+            </article>
+
+            <article class="event-stat-card">
+                <span>G1</span>
+                <strong>${formatPercent(winrateForGames(g1Games))}</strong>
+                <small>${g1Games.length} game${g1Games.length > 1 ? "s" : ""}</small>
+            </article>
+
+            <article class="event-stat-card">
+                <span>Après side</span>
+                <strong>${formatPercent(winrateForGames(postSideGames))}</strong>
+                <small>${postSideGames.length} game${postSideGames.length > 1 ? "s" : ""}</small>
+            </article>
+
+            <article class="event-stat-card">
+                <span>Going first</span>
+                <strong>${formatPercent(winrateForGames(firstGames))}</strong>
+                <small>${firstGames.length} game${firstGames.length > 1 ? "s" : ""}</small>
+            </article>
+
+            <article class="event-stat-card">
+                <span>Going second</span>
+                <strong>${formatPercent(winrateForGames(secondGames))}</strong>
+                <small>${secondGames.length} game${secondGames.length > 1 ? "s" : ""}</small>
+            </article>
+        </section>
+
+        <section class="event-insights">
+            <article class="event-insight-card">
+                <span class="event-insight-icon">🎴</span>
                 <div>
-                    <p class="event-phone-kicker">YGO COACH • EVENT REPORT</p>
-                    <h3>${escapeHtml(tournament.name)}</h3>
-                    <span>${formatDate(tournament.createdAt)} • ${tournamentMatches.length} ronde${tournamentMatches.length > 1 ? "s" : ""}</span>
-                </div>
-
-                <div class="event-phone-record ${recordClass}">
-                    <strong>${matchWins}-${matchLosses}</strong>
-                    <small>${matchWinrate ?? 0}% WR</small>
-                </div>
-            </header>
-
-            <section class="event-phone-main-stats">
-                <article>
-                    <span>GAMES</span>
-                    <strong>${gameWins}-${gameLosses}</strong>
-                    <small>${formatPercent(gameWinrate)}</small>
-                </article>
-
-                <article>
-                    <span>G1</span>
-                    <strong>${formatPercent(winrateForGames(g1Games))}</strong>
-                    <small>${g1Games.length} game${g1Games.length > 1 ? "s" : ""}</small>
-                </article>
-
-                <article>
-                    <span>POST-SIDE</span>
-                    <strong>${formatPercent(winrateForGames(postSideGames))}</strong>
-                    <small>${postSideGames.length} game${postSideGames.length > 1 ? "s" : ""}</small>
-                </article>
-
-                <article>
-                    <span>FIRST</span>
-                    <strong>${formatPercent(winrateForGames(firstGames))}</strong>
-                    <small>${firstGames.length} game${firstGames.length > 1 ? "s" : ""}</small>
-                </article>
-
-                <article>
-                    <span>SECOND</span>
-                    <strong>${formatPercent(winrateForGames(secondGames))}</strong>
-                    <small>${secondGames.length} game${secondGames.length > 1 ? "s" : ""}</small>
-                </article>
-
-                <article>
-                    <span>DICE</span>
-                    <strong>${diceWins}/${tournamentMatches.length}</strong>
-                    <small>${formatPercent(percentage(diceWins, tournamentMatches.length))}</small>
-                </article>
-            </section>
-
-            <section class="event-phone-meta">
-                <div>
-                    <span>DECK</span>
-                    <strong>${escapeHtml(bestDeck?.name || "Non renseigné")}</strong>
-                </div>
-
-                <div>
-                    <span>À TRAVAILLER</span>
+                    <small>Deck joué</small>
                     <strong>
-                        ${
-                            topIssue
-                                ? escapeHtml(reasonLabel(topIssue.reason))
-                                : "Aucun motif dominant"
-                        }
+                        ${escapeHtml(bestDeck?.name || "Non renseigné")}
                     </strong>
+                    ${
+                        decks.length > 1
+                            ? `
+                                <p>
+                                    ${decks
+                                        .map(
+                                            (deck) =>
+                                                `${escapeHtml(deck.name)} ×${deck.count}`
+                                        )
+                                        .join(" • ")}
+                                </p>
+                            `
+                            : ""
+                    }
                 </div>
-            </section>
+            </article>
 
-            <section class="event-phone-rounds">
-                <div class="event-phone-section-title">
-                    <span>PARCOURS</span>
-                    <strong>Ronde par ronde</strong>
+            <article class="event-insight-card">
+                <span class="event-insight-icon">🎲</span>
+                <div>
+                    <small>Dés gagnés</small>
+                    <strong>
+                        ${diceWins}/${tournamentMatches.length}
+                    </strong>
+                    <p>
+                        ${formatPercent(
+                            percentage(
+                                diceWins,
+                                tournamentMatches.length
+                            )
+                        )}
+                    </p>
+                </div>
+            </article>
+
+            ${
+                topIssue
+                    ? `
+                        <article class="event-insight-card">
+                            <span class="event-insight-icon">🦉</span>
+                            <div>
+                                <small>Point à travailler</small>
+                                <strong>
+                                    ${escapeHtml(reasonLabel(topIssue.reason))}
+                                </strong>
+                                <p>
+                                    ${topIssue.count} game${topIssue.count > 1 ? "s" : ""} perdue${topIssue.count > 1 ? "s" : ""}
+                                </p>
+                            </div>
+                        </article>
+                    `
+                    : `
+                        <article class="event-insight-card">
+                            <span class="event-insight-icon">🦉</span>
+                            <div>
+                                <small>Coach</small>
+                                <strong>Aucun motif dominant</strong>
+                                <p>
+                                    Continue à renseigner la cause des défaites.
+                                </p>
+                            </div>
+                        </article>
+                    `
+            }
+        </section>
+
+        <section class="event-summary-section">
+            <div class="event-summary-section-head">
+                <div>
+                    <p class="section-kicker">Parcours</p>
+                    <h3>Ronde par ronde</h3>
                 </div>
 
-                <div class="event-phone-round-list">
-                    ${tournamentMatches
-                        .slice(0, 7)
-                        .map(
-                            (match, index) => {
-                                const isWin =
-                                    match.result === "win";
+                <span class="panel-chip">
+                    ${matchWins}-${matchLosses}
+                </span>
+            </div>
 
-                                return `
-                                    <article class="event-phone-round">
-                                        <div class="event-phone-round-number">
-                                            R${index + 1}
+            <div class="event-round-list">
+                ${tournamentMatches
+                    .map(
+                        (match, index) => {
+                            const isWin =
+                                match.result ===
+                                "win";
+
+                            const gameRecord =
+                                (match.games || [])
+                                    .filter(
+                                        (game) =>
+                                            game.result === "win" ||
+                                            game.result === "loss"
+                                    );
+
+                            const gameWinsForMatch =
+                                gameRecord.filter(
+                                    (game) =>
+                                        game.result === "win"
+                                ).length;
+
+                            const gameLossesForMatch =
+                                gameRecord.filter(
+                                    (game) =>
+                                        game.result === "loss"
+                                ).length;
+
+                            return `
+                                <article class="event-round-card">
+                                    <div class="event-round-number">
+                                        R${index + 1}
+                                    </div>
+
+                                    <div class="event-round-main">
+                                        <div class="event-round-title-row">
+                                            <strong>
+                                                ${escapeHtml(match.opponentDeck)}
+                                            </strong>
+
+                                            <span class="event-round-result ${isWin ? "win" : "loss"}">
+                                                ${isWin ? "VICTOIRE" : "DÉFAITE"}
+                                                ${escapeHtml(match.score || `${gameWinsForMatch}-${gameLossesForMatch}`)}
+                                            </span>
                                         </div>
 
-                                        <div class="event-phone-round-opponent">
-                                            <strong>${escapeHtml(match.opponentDeck)}</strong>
+                                        <div class="event-round-meta">
                                             <span>
                                                 ${escapeHtml(match.myDeck || "Deck non renseigné")}
                                             </span>
-                                        </div>
-
-                                        <div class="event-phone-round-info">
-                                            <strong class="${isWin ? "win" : "loss"}">
-                                                ${isWin ? "W" : "L"} ${escapeHtml(match.score)}
-                                            </strong>
                                             <span>
-                                                ${match.dice === "win" ? "🎲✓" : "🎲×"}
-                                                • ${escapeHtml(positionLabel(match.position))}
+                                                G1 ${escapeHtml(positionLabel(match.position))}
+                                            </span>
+                                            <span>
+                                                Dé ${match.dice === "win" ? "gagné" : "perdu"}
                                             </span>
                                         </div>
-                                    </article>
-                                `;
-                            }
-                        )
-                        .join("")}
-                </div>
-            </section>
 
-            <section class="event-phone-matchups">
-                <div class="event-phone-section-title">
-                    <span>MATCHUPS</span>
-                    <strong>Decks affrontés</strong>
-                </div>
+                                        ${
+                                            match.note
+                                                ? `
+                                                    <p class="event-round-note">
+                                                        ${escapeHtml(match.note)}
+                                                    </p>
+                                                `
+                                                : ""
+                                        }
+                                    </div>
+                                </article>
+                            `;
+                        }
+                    )
+                    .join("")}
+            </div>
+        </section>
 
-                <div class="event-phone-matchup-chips">
-                    ${opponentStats
-                        .slice(0, 6)
-                        .map(
-                            (item) => `
+        <section class="event-summary-section">
+            <div class="event-summary-section-head">
+                <div>
+                    <p class="section-kicker">Matchups</p>
+                    <h3>Decks affrontés</h3>
+                </div>
+            </div>
+
+            <div class="event-matchup-list">
+                ${opponentStats
+                    .map(
+                        (item) => `
+                            <div class="event-matchup-row">
+                                <div>
+                                    <strong>
+                                        ${escapeHtml(item.name)}
+                                    </strong>
+
+                                    <small>
+                                        ${item.matches} rencontre${item.matches > 1 ? "s" : ""}
+                                    </small>
+                                </div>
+
                                 <span>
-                                    ${escapeHtml(item.name)}
-                                    <strong>${item.wins}-${item.losses}</strong>
+                                    ${item.wins}-${item.losses}
                                 </span>
-                            `
-                        )
-                        .join("")}
-                </div>
-            </section>
-
-            <footer class="event-phone-footer">
-                <span>YGO Coach</span>
-                <span>${escapeHtml(profile?.name || "Player")}</span>
-            </footer>
+                            </div>
+                        `
+                    )
+                    .join("")}
+            </div>
         </section>
     `;
 }

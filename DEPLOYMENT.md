@@ -264,18 +264,3 @@ git push
 ```
 
 Le service worker utilise maintenant le cache `ygo-coach-v6-5-1`.
-
-
-## V6.5.3 — Résumé téléphone uniquement
-
-Aucune migration Supabase n'est nécessaire.
-
-Pour publier :
-
-```powershell
-git add .
-git commit -m "YGO Coach V6.5.3 resume telephone"
-git push
-```
-
-Le service worker utilise maintenant le cache `ygo-coach-v6-5-3`.

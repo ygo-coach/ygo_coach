@@ -250,17 +250,3 @@ git push
 ```
 
 Le service worker utilise maintenant le cache `ygo-coach-v6-5`.
-
-
-## V6.5.1 — Refonte visuelle Yu-Gi-Oh
-
-Aucune migration Supabase n'est nécessaire.
-Pour publier :
-
-```powershell
-git add .
-git commit -m "YGO Coach V6.5.1 theme yugioh"
-git push
-```
-
-Le service worker utilise maintenant le cache `ygo-coach-v6-5-1`.

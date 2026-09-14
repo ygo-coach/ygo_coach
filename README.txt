@@ -103,3 +103,16 @@ Cette version retravaille surtout le style visuel :
     - résumé de tournoi restylé
 
 Aucune migration Supabase n'est nécessaire.
+
+
+V6.5.2 — FORMAT TÉLÉPHONE / TIKTOK
+
+Cette version retravaille la mise en page :
+
+    - largeur de l'application bloquée en format téléphone
+    - meilleure présentation sur PC comme sur iPhone
+    - barre de navigation fixée en bas de l'écran
+    - résumé de tournoi affiché dans une vraie modale plein écran mobile
+    - résumé plus compact pour tenir dans une logique "1 écran téléphone"
+
+Aucune migration Supabase n'est nécessaire.

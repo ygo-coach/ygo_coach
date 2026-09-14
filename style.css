@@ -3011,3 +3011,500 @@ textarea:focus {
             linear-gradient(180deg, #080b1a 0, #0b1124 320px, #0d1226 100%);
     }
 }
+
+
+/* =========================
+   V6.5.2 - FORMAT TÉLÉPHONE
+   ========================= */
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+.app-shell {
+    width: min(100%, 430px);
+    min-height: 100dvh;
+    margin: 0 auto;
+}
+
+.topbar {
+    width: min(100%, 430px);
+    margin: 0 auto;
+}
+
+.content {
+    width: 100%;
+    max-width: 430px;
+    padding: 16px 12px 108px;
+}
+
+.bottom-nav {
+    right: auto;
+    left: 50%;
+    width: min(calc(100vw - 18px), 410px);
+    max-width: none;
+    transform: translateX(-50%);
+    bottom: calc(10px + env(safe-area-inset-bottom));
+}
+
+.page-heading {
+    margin: 2px 2px 16px;
+}
+
+.page-heading h2 {
+    font-size: 28px;
+}
+
+.page-heading > p:last-child {
+    font-size: 13px;
+}
+
+.hero-card {
+    min-height: 152px;
+    padding: 18px;
+    border-radius: 24px;
+}
+
+.hero-card h2 {
+    font-size: clamp(38px, 11vw, 52px);
+}
+
+.hero-label,
+.hero-card p:last-child {
+    font-size: 12px;
+}
+
+.hero-orb {
+    width: 76px;
+    height: 76px;
+    border-radius: 22px;
+}
+
+.hero-orb span {
+    font-size: 25px;
+}
+
+.hero-orb small {
+    font-size: 10px;
+}
+
+.quick-grid,
+.stats-grid,
+.auth-actions,
+.sync-actions,
+.backup-actions,
+.deck-zone-grid {
+    gap: 8px;
+}
+
+.quick-card,
+.form-card,
+.panel,
+.filter-card,
+.match-card,
+.tournament-card {
+    border-radius: 20px;
+}
+
+.quick-card {
+    padding: 12px;
+}
+
+.quick-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+}
+
+.section-header {
+    margin: 22px 2px 10px;
+}
+
+.section-header h3,
+.panel-heading h3 {
+    font-size: 18px;
+}
+
+.form-card,
+.panel {
+    padding: 14px;
+}
+
+.profile-form,
+.tournament-form {
+    gap: 10px;
+}
+
+.field-group {
+    gap: 6px;
+}
+
+.field-group label,
+.filter-card label {
+    font-size: 11px;
+}
+
+input,
+select {
+    min-height: 46px;
+    padding: 0 12px;
+    border-radius: 14px;
+    font-size: 14px;
+}
+
+textarea {
+    min-height: 90px;
+    padding: 11px 12px;
+    border-radius: 14px;
+    font-size: 14px;
+}
+
+.primary-button,
+.secondary-button {
+    min-height: 46px;
+    border-radius: 14px;
+}
+
+.match-card,
+.tournament-card {
+    padding: 12px;
+}
+
+.match-title,
+.tournament-title {
+    font-size: 14px;
+}
+
+.match-meta,
+.match-note,
+.tournament-meta {
+    font-size: 11px;
+}
+
+.match-actions {
+    gap: 7px;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+.match-actions .link-button,
+.danger-button {
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 10px;
+    font-size: 11px;
+}
+
+.game-summary {
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.game-summary-row {
+    grid-template-columns: 30px 64px 1fr;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 10px;
+    font-size: 10px;
+}
+
+.side-line {
+    font-size: 9px;
+}
+
+.tournament-card-score strong {
+    font-size: 15px;
+}
+
+.tournament-card-score span {
+    font-size: 8px;
+}
+
+.bottom-nav .nav-button {
+    min-height: 54px;
+    border-radius: 14px;
+}
+
+.bottom-nav .nav-button small {
+    font-size: 9px;
+}
+
+.bottom-nav .nav-icon {
+    font-size: 18px;
+}
+
+.bottom-nav .nav-icon-plus {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    font-size: 20px;
+}
+
+/* =========================
+   V6.5.2 - MODALE RÉSUMÉ
+   ========================= */
+
+.event-summary-modal {
+    padding: 0;
+    place-items: center;
+}
+
+.event-summary-sheet {
+    width: min(100%, 430px);
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    overflow: hidden;
+}
+
+.event-summary-toolbar {
+    gap: 10px;
+    padding: calc(12px + env(safe-area-inset-top)) 12px 10px;
+}
+
+.event-summary-toolbar h2 {
+    margin: 2px 0 1px;
+    font-size: 22px;
+}
+
+.event-summary-date {
+    font-size: 10px;
+}
+
+.event-summary-close {
+    width: 34px;
+    height: 34px;
+    font-size: 22px;
+}
+
+#tournament-summary-content {
+    height: calc(100dvh - 84px - env(safe-area-inset-top));
+    padding: 10px 12px calc(18px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.event-hero {
+    min-height: 96px;
+    padding: 14px;
+    border-radius: 18px;
+}
+
+.event-hero-label,
+.event-hero-sub {
+    font-size: 8px;
+}
+
+.event-record {
+    margin: 4px 0;
+    font-size: clamp(30px, 10vw, 42px);
+}
+
+.event-winrate-ring {
+    width: 68px;
+    height: 68px;
+}
+
+.event-winrate-ring strong {
+    font-size: 18px;
+}
+
+.event-winrate-ring small {
+    margin-top: -16px;
+    font-size: 7px;
+}
+
+.event-stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.event-stat-card {
+    padding: 9px;
+    border-radius: 13px;
+}
+
+.event-stat-card span {
+    font-size: 7px;
+}
+
+.event-stat-card strong {
+    margin: 3px 0 1px;
+    font-size: 15px;
+}
+
+.event-stat-card small {
+    font-size: 8px;
+}
+
+.event-insights {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.event-insight-card {
+    gap: 8px;
+    padding: 9px;
+    border-radius: 13px;
+}
+
+.event-insight-icon {
+    font-size: 18px;
+}
+
+.event-insight-card small {
+    font-size: 8px;
+}
+
+.event-insight-card strong {
+    font-size: 10px;
+}
+
+.event-insight-card p {
+    font-size: 8px;
+    line-height: 1.35;
+}
+
+.event-summary-section {
+    margin-top: 12px;
+}
+
+.event-summary-section-head {
+    margin-bottom: 7px;
+}
+
+.event-summary-section-head h3 {
+    font-size: 15px;
+}
+
+.event-round-list,
+.event-matchup-list {
+    gap: 6px;
+}
+
+.event-round-card {
+    gap: 8px;
+    padding: 8px;
+    border-radius: 12px;
+}
+
+.event-round-number {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    font-size: 10px;
+}
+
+.event-round-title-row {
+    gap: 6px;
+}
+
+.event-round-title-row > strong {
+    font-size: 11px;
+}
+
+.event-round-result {
+    padding: 4px 6px;
+    font-size: 7px;
+}
+
+.event-round-meta {
+    gap: 4px 8px;
+    margin-top: 4px;
+    font-size: 8px;
+}
+
+.event-round-note {
+    margin-top: 5px;
+    font-size: 8px;
+    line-height: 1.35;
+}
+
+.event-matchup-row {
+    padding: 8px 10px;
+    border-radius: 12px;
+}
+
+.event-matchup-row strong {
+    font-size: 10px;
+}
+
+.event-matchup-row small {
+    font-size: 8px;
+}
+
+.event-matchup-row > span {
+    font-size: 10px;
+}
+
+.event-summary-empty {
+    padding: 26px 16px;
+}
+
+.event-summary-empty-icon {
+    font-size: 34px;
+}
+
+.event-summary-empty p {
+    font-size: 10px;
+}
+
+@media (min-width: 540px) {
+    .app-shell {
+        margin: 12px auto 20px;
+        border: 1px solid rgba(196, 162, 255, 0.12);
+        border-radius: 32px;
+        background: rgba(8, 12, 28, 0.44);
+        box-shadow:
+            0 30px 80px rgba(0, 0, 0, 0.45),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        overflow: hidden;
+    }
+
+    .topbar {
+        border-radius: 0;
+    }
+
+    .bottom-nav {
+        width: min(410px, calc(100vw - 24px));
+    }
+
+    .event-summary-sheet {
+        height: min(100dvh - 24px, 860px);
+        max-height: min(100dvh - 24px, 860px);
+        border-radius: 30px;
+    }
+
+    #tournament-summary-content {
+        height: calc(min(100dvh - 24px, 860px) - 84px);
+    }
+}
+
+@media (max-width: 430px) {
+    .bottom-nav {
+        width: calc(100vw - 12px);
+        bottom: calc(6px + env(safe-area-inset-bottom));
+    }
+
+    .content {
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+
+    .hero-card {
+        min-height: 144px;
+        padding: 16px;
+    }
+
+    .hero-orb {
+        width: 70px;
+        height: 70px;
+    }
+}

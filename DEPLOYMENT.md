@@ -264,3 +264,18 @@ git push
 ```
 
 Le service worker utilise maintenant le cache `ygo-coach-v6-5-1`.
+
+
+## V6.5.2 — Layout téléphone / TikTok
+
+Aucune migration Supabase n'est nécessaire.
+
+Pour publier :
+
+```powershell
+git add .
+git commit -m "YGO Coach V6.5.2 format telephone"
+git push
+```
+
+Le service worker utilise maintenant le cache `ygo-coach-v6-5-2`.

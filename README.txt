@@ -105,14 +105,18 @@ Cette version retravaille surtout le style visuel :
 Aucune migration Supabase n'est nécessaire.
 
 
-V6.5.2 — FORMAT TÉLÉPHONE / TIKTOK
+V6.5.3 — RÉSUMÉ AU FORMAT TÉLÉPHONE UNIQUEMENT
 
-Cette version retravaille la mise en page :
+L'application reste responsive normalement sur PC.
 
-    - largeur de l'application bloquée en format téléphone
-    - meilleure présentation sur PC comme sur iPhone
-    - barre de navigation fixée en bas de l'écran
-    - résumé de tournoi affiché dans une vraie modale plein écran mobile
-    - résumé plus compact pour tenir dans une logique "1 écran téléphone"
+Seul le résumé d'événement est forcé dans un cadre téléphone :
+    - environ 390 px de large sur PC
+    - centré à l'écran
+    - plein écran sur téléphone
+    - format pensé pour capture / TikTok / Shorts
+    - contenu compacté sur un seul écran
+
+La barre de navigation principale est aussi forcée en position fixed
+pour rester au bas du viewport.
 
 Aucune migration Supabase n'est nécessaire.

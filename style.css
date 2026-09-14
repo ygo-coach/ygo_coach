@@ -3014,497 +3014,369 @@ textarea:focus {
 
 
 /* =========================
-   V6.5.2 - FORMAT TÉLÉPHONE
+   V6.5.3 - APP NORMALE + RÉSUMÉ TÉLÉPHONE
    ========================= */
 
-html,
-body {
-    min-height: 100%;
-}
-
-body {
-    overflow-x: hidden;
-}
-
+/* L'application retrouve sa largeur desktop normale. */
 .app-shell {
-    width: min(100%, 430px);
-    min-height: 100dvh;
-    margin: 0 auto;
-}
-
-.topbar {
-    width: min(100%, 430px);
-    margin: 0 auto;
-}
-
-.content {
     width: 100%;
-    max-width: 430px;
-    padding: 16px 12px 108px;
+    min-height: 100vh;
+    margin: 0;
 }
 
+/* La navigation reste TOUJOURS fixée au bas du viewport. */
 .bottom-nav {
-    right: auto;
-    left: 50%;
-    width: min(calc(100vw - 18px), 410px);
-    max-width: none;
-    transform: translateX(-50%);
+    position: fixed !important;
+    right: 10px;
     bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 10px;
+    width: auto;
+    max-width: 720px;
+    margin: 0 auto;
+    transform: none;
 }
 
-.page-heading {
-    margin: 2px 2px 16px;
-}
-
-.page-heading h2 {
-    font-size: 28px;
-}
-
-.page-heading > p:last-child {
-    font-size: 13px;
-}
-
-.hero-card {
-    min-height: 152px;
-    padding: 18px;
-    border-radius: 24px;
-}
-
-.hero-card h2 {
-    font-size: clamp(38px, 11vw, 52px);
-}
-
-.hero-label,
-.hero-card p:last-child {
-    font-size: 12px;
-}
-
-.hero-orb {
-    width: 76px;
-    height: 76px;
-    border-radius: 22px;
-}
-
-.hero-orb span {
-    font-size: 25px;
-}
-
-.hero-orb small {
-    font-size: 10px;
-}
-
-.quick-grid,
-.stats-grid,
-.auth-actions,
-.sync-actions,
-.backup-actions,
-.deck-zone-grid {
-    gap: 8px;
-}
-
-.quick-card,
-.form-card,
-.panel,
-.filter-card,
-.match-card,
-.tournament-card {
-    border-radius: 20px;
-}
-
-.quick-card {
-    padding: 12px;
-}
-
-.quick-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-}
-
-.section-header {
-    margin: 22px 2px 10px;
-}
-
-.section-header h3,
-.panel-heading h3 {
-    font-size: 18px;
-}
-
-.form-card,
-.panel {
-    padding: 14px;
-}
-
-.profile-form,
-.tournament-form {
-    gap: 10px;
-}
-
-.field-group {
-    gap: 6px;
-}
-
-.field-group label,
-.filter-card label {
-    font-size: 11px;
-}
-
-input,
-select {
-    min-height: 46px;
-    padding: 0 12px;
-    border-radius: 14px;
-    font-size: 14px;
-}
-
-textarea {
-    min-height: 90px;
-    padding: 11px 12px;
-    border-radius: 14px;
-    font-size: 14px;
-}
-
-.primary-button,
-.secondary-button {
-    min-height: 46px;
-    border-radius: 14px;
-}
-
-.match-card,
-.tournament-card {
-    padding: 12px;
-}
-
-.match-title,
-.tournament-title {
-    font-size: 14px;
-}
-
-.match-meta,
-.match-note,
-.tournament-meta {
-    font-size: 11px;
-}
-
-.match-actions {
-    gap: 7px;
-    margin-top: 10px;
-    padding-top: 10px;
-}
-
-.match-actions .link-button,
-.danger-button {
-    min-height: 32px;
-    padding: 0 10px;
-    border-radius: 10px;
-    font-size: 11px;
-}
-
-.game-summary {
-    gap: 6px;
-    margin-top: 10px;
-}
-
-.game-summary-row {
-    grid-template-columns: 30px 64px 1fr;
-    gap: 6px;
-    padding: 8px;
-    border-radius: 10px;
-    font-size: 10px;
-}
-
-.side-line {
-    font-size: 9px;
-}
-
-.tournament-card-score strong {
-    font-size: 15px;
-}
-
-.tournament-card-score span {
-    font-size: 8px;
-}
-
-.bottom-nav .nav-button {
-    min-height: 54px;
-    border-radius: 14px;
-}
-
-.bottom-nav .nav-button small {
-    font-size: 9px;
-}
-
-.bottom-nav .nav-icon {
-    font-size: 18px;
-}
-
-.bottom-nav .nav-icon-plus {
-    width: 28px;
-    height: 28px;
-    border-radius: 10px;
-    font-size: 20px;
-}
-
-/* =========================
-   V6.5.2 - MODALE RÉSUMÉ
-   ========================= */
-
+/* Le résumé seul prend un format téléphone/TikTok. */
 .event-summary-modal {
-    padding: 0;
+    padding: 18px;
     place-items: center;
 }
 
-.event-summary-sheet {
-    width: min(100%, 430px);
-    height: 100dvh;
-    max-height: 100dvh;
-    border-radius: 0;
+.event-summary-phone-frame {
+    width: min(390px, calc(100vw - 24px));
+    height: min(844px, calc(100dvh - 24px));
+    max-height: min(844px, calc(100dvh - 24px));
+    overflow: hidden;
+    border-radius: 30px;
+    border: 1px solid rgba(240, 199, 110, 0.18);
+    box-shadow:
+        0 30px 90px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.event-summary-phone-frame .event-summary-toolbar {
+    padding: calc(10px + env(safe-area-inset-top)) 11px 8px;
+}
+
+.event-summary-phone-frame .event-summary-toolbar h2 {
+    font-size: 18px;
+}
+
+.event-summary-phone-frame .event-summary-date {
+    font-size: 8px;
+}
+
+.event-summary-phone-frame .event-summary-close {
+    width: 30px;
+    height: 30px;
+    font-size: 19px;
+}
+
+.event-summary-phone-frame #tournament-summary-content {
+    height: calc(100% - 70px);
+    padding: 8px 10px 10px;
     overflow: hidden;
 }
 
-.event-summary-toolbar {
+.event-phone-summary {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.event-phone-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 10px;
-    padding: calc(12px + env(safe-area-inset-top)) 12px 10px;
+    padding: 10px 11px;
+    border: 1px solid rgba(240, 199, 110, 0.14);
+    border-radius: 16px;
+    background:
+        radial-gradient(circle at top right, rgba(240, 199, 110, 0.13), transparent 40%),
+        linear-gradient(145deg, #18102f, #10162a);
 }
 
-.event-summary-toolbar h2 {
-    margin: 2px 0 1px;
-    font-size: 22px;
-}
-
-.event-summary-date {
-    font-size: 10px;
-}
-
-.event-summary-close {
-    width: 34px;
-    height: 34px;
-    font-size: 22px;
-}
-
-#tournament-summary-content {
-    height: calc(100dvh - 84px - env(safe-area-inset-top));
-    padding: 10px 12px calc(18px + env(safe-area-inset-bottom));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}
-
-.event-hero {
-    min-height: 96px;
-    padding: 14px;
-    border-radius: 18px;
-}
-
-.event-hero-label,
-.event-hero-sub {
-    font-size: 8px;
-}
-
-.event-record {
-    margin: 4px 0;
-    font-size: clamp(30px, 10vw, 42px);
-}
-
-.event-winrate-ring {
-    width: 68px;
-    height: 68px;
-}
-
-.event-winrate-ring strong {
-    font-size: 18px;
-}
-
-.event-winrate-ring small {
-    margin-top: -16px;
+.event-phone-kicker {
+    margin: 0 0 3px;
+    color: var(--accent);
     font-size: 7px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
 }
 
-.event-stat-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-    margin-top: 8px;
+.event-phone-header h3 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.05;
 }
 
-.event-stat-card {
-    padding: 9px;
-    border-radius: 13px;
-}
-
-.event-stat-card span {
-    font-size: 7px;
-}
-
-.event-stat-card strong {
-    margin: 3px 0 1px;
-    font-size: 15px;
-}
-
-.event-stat-card small {
-    font-size: 8px;
-}
-
-.event-insights {
-    grid-template-columns: 1fr;
-    gap: 6px;
-    margin-top: 8px;
-}
-
-.event-insight-card {
-    gap: 8px;
-    padding: 9px;
-    border-radius: 13px;
-}
-
-.event-insight-icon {
-    font-size: 18px;
-}
-
-.event-insight-card small {
-    font-size: 8px;
-}
-
-.event-insight-card strong {
-    font-size: 10px;
-}
-
-.event-insight-card p {
-    font-size: 8px;
-    line-height: 1.35;
-}
-
-.event-summary-section {
-    margin-top: 12px;
-}
-
-.event-summary-section-head {
-    margin-bottom: 7px;
-}
-
-.event-summary-section-head h3 {
-    font-size: 15px;
-}
-
-.event-round-list,
-.event-matchup-list {
-    gap: 6px;
-}
-
-.event-round-card {
-    gap: 8px;
-    padding: 8px;
-    border-radius: 12px;
-}
-
-.event-round-number {
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-    font-size: 10px;
-}
-
-.event-round-title-row {
-    gap: 6px;
-}
-
-.event-round-title-row > strong {
-    font-size: 11px;
-}
-
-.event-round-result {
-    padding: 4px 6px;
-    font-size: 7px;
-}
-
-.event-round-meta {
-    gap: 4px 8px;
+.event-phone-header > div:first-child > span {
+    display: block;
     margin-top: 4px;
+    color: var(--muted);
     font-size: 8px;
 }
 
-.event-round-note {
-    margin-top: 5px;
+.event-phone-record {
+    display: grid;
+    min-width: 68px;
+    place-items: center;
+    padding: 8px;
+    border-radius: 13px;
+    background: rgba(85, 231, 170, 0.11);
+    color: var(--success);
+}
+
+.event-phone-record.negative {
+    background: rgba(255, 132, 154, 0.11);
+    color: var(--danger);
+}
+
+.event-phone-record.neutral {
+    background: rgba(240, 199, 110, 0.11);
+    color: var(--accent);
+}
+
+.event-phone-record strong {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.event-phone-record small {
+    margin-top: 4px;
+    font-size: 7px;
+    font-weight: 900;
+}
+
+.event-phone-main-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+}
+
+.event-phone-main-stats article {
+    min-width: 0;
+    padding: 7px;
+    border: 1px solid rgba(196, 162, 255, 0.08);
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.event-phone-main-stats span,
+.event-phone-main-stats strong,
+.event-phone-main-stats small {
+    display: block;
+}
+
+.event-phone-main-stats span {
+    color: var(--muted);
+    font-size: 6px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+}
+
+.event-phone-main-stats strong {
+    margin: 2px 0 1px;
+    color: #ffffff;
+    font-size: 13px;
+}
+
+.event-phone-main-stats small {
+    color: var(--muted);
+    font-size: 7px;
+}
+
+.event-phone-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+
+.event-phone-meta > div {
+    min-width: 0;
+    padding: 7px 8px;
+    border-radius: 11px;
+    background: rgba(125, 88, 255, 0.07);
+}
+
+.event-phone-meta span,
+.event-phone-meta strong {
+    display: block;
+}
+
+.event-phone-meta span {
+    color: var(--accent);
+    font-size: 6px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+}
+
+.event-phone-meta strong {
+    margin-top: 2px;
+    overflow: hidden;
+    color: #f7f3ff;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.event-phone-rounds {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+.event-phone-section-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.event-phone-section-title span {
+    color: var(--accent);
+    font-size: 6px;
+    font-weight: 900;
+    letter-spacing: 0.10em;
+}
+
+.event-phone-section-title strong {
+    color: #ffffff;
+    font-size: 10px;
+}
+
+.event-phone-round-list {
+    display: grid;
+    gap: 4px;
+}
+
+.event-phone-round {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 7px;
+    align-items: center;
+    padding: 6px 7px;
+    border: 1px solid rgba(196, 162, 255, 0.07);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.028);
+}
+
+.event-phone-round-number {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    place-items: center;
+    border-radius: 8px;
+    background: rgba(125, 88, 255, 0.13);
+    color: var(--primary-strong);
     font-size: 8px;
-    line-height: 1.35;
+    font-weight: 900;
 }
 
-.event-matchup-row {
-    padding: 8px 10px;
-    border-radius: 12px;
+.event-phone-round-opponent {
+    min-width: 0;
 }
 
-.event-matchup-row strong {
-    font-size: 10px;
+.event-phone-round-opponent strong,
+.event-phone-round-opponent span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.event-matchup-row small {
-    font-size: 8px;
+.event-phone-round-opponent strong {
+    color: #ffffff;
+    font-size: 9px;
 }
 
-.event-matchup-row > span {
-    font-size: 10px;
+.event-phone-round-opponent span {
+    margin-top: 1px;
+    color: var(--muted);
+    font-size: 7px;
 }
 
-.event-summary-empty {
-    padding: 26px 16px;
+.event-phone-round-info {
+    text-align: right;
 }
 
-.event-summary-empty-icon {
-    font-size: 34px;
+.event-phone-round-info strong,
+.event-phone-round-info span {
+    display: block;
 }
 
-.event-summary-empty p {
-    font-size: 10px;
+.event-phone-round-info strong {
+    font-size: 9px;
 }
 
-@media (min-width: 540px) {
-    .app-shell {
-        margin: 12px auto 20px;
-        border: 1px solid rgba(196, 162, 255, 0.12);
-        border-radius: 32px;
-        background: rgba(8, 12, 28, 0.44);
-        box-shadow:
-            0 30px 80px rgba(0, 0, 0, 0.45),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04);
-        overflow: hidden;
-    }
-
-    .topbar {
-        border-radius: 0;
-    }
-
-    .bottom-nav {
-        width: min(410px, calc(100vw - 24px));
-    }
-
-    .event-summary-sheet {
-        height: min(100dvh - 24px, 860px);
-        max-height: min(100dvh - 24px, 860px);
-        border-radius: 30px;
-    }
-
-    #tournament-summary-content {
-        height: calc(min(100dvh - 24px, 860px) - 84px);
-    }
+.event-phone-round-info strong.win {
+    color: var(--success);
 }
 
+.event-phone-round-info strong.loss {
+    color: var(--danger);
+}
+
+.event-phone-round-info span {
+    margin-top: 1px;
+    color: var(--muted);
+    font-size: 7px;
+}
+
+.event-phone-matchups {
+    flex: 0 0 auto;
+}
+
+.event-phone-matchup-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.event-phone-matchup-chips > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    padding: 4px 6px;
+    border: 1px solid rgba(196, 162, 255, 0.08);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted);
+    font-size: 7px;
+}
+
+.event-phone-matchup-chips strong {
+    color: var(--accent);
+}
+
+.event-phone-footer {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    color: rgba(168, 178, 209, 0.72);
+    font-size: 6px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* Sur mobile, la carte téléphone prend naturellement tout l'écran disponible. */
 @media (max-width: 430px) {
-    .bottom-nav {
-        width: calc(100vw - 12px);
-        bottom: calc(6px + env(safe-area-inset-bottom));
+    .event-summary-modal {
+        padding: 0;
     }
 
-    .content {
-        padding-right: 10px;
-        padding-left: 10px;
-    }
-
-    .hero-card {
-        min-height: 144px;
-        padding: 16px;
-    }
-
-    .hero-orb {
-        width: 70px;
-        height: 70px;
+    .event-summary-phone-frame {
+        width: 100vw;
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
     }
 }

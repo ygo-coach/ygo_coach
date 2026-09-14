@@ -2550,3 +2550,464 @@ body.event-summary-open {
         align-self: flex-start;
     }
 }
+
+
+/* =========================
+   V6.5.1 - YU-GI-OH THEME
+   ========================= */
+
+:root {
+    --bg: #070b18;
+    --surface: rgba(13, 18, 36, 0.90);
+    --surface-soft: rgba(18, 24, 46, 0.92);
+    --primary: #7d58ff;
+    --primary-strong: #c4a2ff;
+    --primary-dark: #0d1021;
+    --accent: #f0c76e;
+    --text: #eef2ff;
+    --muted: #a8b2d1;
+    --border: rgba(191, 205, 255, 0.14);
+    --success: #55e7aa;
+    --danger: #ff849a;
+    --shadow:
+        0 24px 60px rgba(3, 6, 18, 0.42),
+        0 8px 24px rgba(7, 10, 24, 0.26);
+}
+
+html {
+    background: var(--bg);
+}
+
+body {
+    position: relative;
+    background:
+        radial-gradient(circle at 15% 0%, rgba(125, 88, 255, 0.24), transparent 28rem),
+        radial-gradient(circle at 85% 10%, rgba(52, 216, 255, 0.18), transparent 24rem),
+        radial-gradient(circle at 50% 100%, rgba(240, 199, 110, 0.08), transparent 28rem),
+        linear-gradient(180deg, #080b1a 0, #0b1124 280px, #0d1226 100%);
+    color: var(--text);
+}
+
+body::before {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.54), transparent 92%);
+    content: "";
+}
+
+body::after {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 25% 35%, rgba(125, 88, 255, 0.08), transparent 18rem),
+        radial-gradient(circle at 75% 18%, rgba(240, 199, 110, 0.07), transparent 13rem);
+    content: "";
+}
+
+.app-shell,
+.content,
+.topbar,
+.bottom-nav,
+.event-summary-modal {
+    position: relative;
+    z-index: 1;
+}
+
+.topbar {
+    border-bottom: 1px solid rgba(240, 199, 110, 0.12);
+    background:
+        linear-gradient(180deg, rgba(8, 12, 27, 0.94), rgba(10, 15, 31, 0.86));
+    box-shadow: 0 10px 30px rgba(4, 5, 18, 0.35);
+}
+
+.brand-icon {
+    border: 1px solid rgba(240, 199, 110, 0.22);
+    border-radius: 16px;
+    background:
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18), transparent 48%),
+        linear-gradient(145deg, rgba(125, 88, 255, 0.28), rgba(16, 22, 46, 0.92));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 10px 22px rgba(0, 0, 0, 0.24);
+}
+
+.eyebrow {
+    color: rgba(240, 199, 110, 0.68);
+}
+
+.section-kicker {
+    color: var(--accent);
+}
+
+.version-pill,
+.cloud-pill {
+    border-color: rgba(196, 162, 255, 0.18);
+    background: rgba(255, 255, 255, 0.05);
+    color: #f1e9ff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.page-heading h2 {
+    color: #f7f3ff;
+    text-shadow: 0 8px 30px rgba(125, 88, 255, 0.16);
+}
+
+.page-heading > p:last-child {
+    color: rgba(232, 237, 255, 0.72);
+}
+
+.hero-card {
+    border: 1px solid rgba(240, 199, 110, 0.18);
+    background:
+        radial-gradient(circle at 12% 15%, rgba(240, 199, 110, 0.16), transparent 12rem),
+        radial-gradient(circle at 92% 0%, rgba(52, 216, 255, 0.18), transparent 14rem),
+        linear-gradient(135deg, #1a1132 0%, #11162d 38%, #0a1022 100%);
+    box-shadow:
+        0 28px 65px rgba(2, 5, 16, 0.50),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 0 0 1px rgba(196, 162, 255, 0.05);
+}
+
+.hero-card::before {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(120deg, transparent 0 35%, rgba(255, 255, 255, 0.05) 40%, transparent 46%),
+        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 12px);
+    pointer-events: none;
+    content: "";
+}
+
+.hero-card::after {
+    right: -35px;
+    bottom: -60px;
+    width: 190px;
+    height: 190px;
+    border-color: rgba(240, 199, 110, 0.12);
+}
+
+.hero-label,
+.hero-card p:last-child,
+.hero-orb small {
+    color: rgba(238, 242, 255, 0.68);
+}
+
+.hero-orb {
+    border-color: rgba(240, 199, 110, 0.18);
+    background:
+        linear-gradient(145deg, rgba(125, 88, 255, 0.20), rgba(255, 255, 255, 0.04));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 16px 30px rgba(2, 5, 16, 0.30);
+}
+
+.quick-card,
+.form-card,
+.panel,
+.filter-card,
+.match-card,
+.tournament-card,
+.import-box,
+.game-editor,
+.deck-zone-card,
+.deck-zone-card,
+.event-stat-card,
+.event-round-card,
+.event-matchup-row,
+.event-summary-sheet,
+.account-identity,
+.card-search-result,
+.deck-builder-panel,
+.deck-zone-card,
+.event-insight-card {
+    border: 1px solid rgba(196, 162, 255, 0.10);
+    background:
+        linear-gradient(180deg, rgba(17, 23, 44, 0.96), rgba(11, 16, 31, 0.94));
+    color: var(--text);
+    box-shadow: var(--shadow);
+}
+
+.quick-card,
+.match-card,
+.tournament-card,
+.panel,
+.filter-card,
+.form-card,
+.deck-builder-panel,
+.event-summary-sheet {
+    backdrop-filter: blur(16px);
+}
+
+.quick-icon,
+.form-section-title > span,
+.game-number,
+.nav-icon-plus,
+.account-avatar,
+.event-round-number {
+    background:
+        linear-gradient(145deg, rgba(125, 88, 255, 0.95), rgba(84, 50, 185, 0.96));
+    color: #ffffff;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        0 8px 18px rgba(74, 50, 164, 0.35);
+}
+
+.form-section-title small,
+.metric-sub,
+.panel-copy,
+.match-meta,
+.match-note,
+.tournament-meta,
+.side-line,
+.event-round-meta,
+.event-round-note,
+.event-summary-date,
+.card-search-result small,
+.deck-card-copy small,
+.deck-builder-source,
+.card-language-setting small,
+.metric-row,
+.file-picker,
+.cloud-warning,
+.event-insight-card p,
+.event-stat-card small,
+.event-matchup-row small,
+.helper-empty,
+.field-help,
+.hand-picker-counter {
+    color: var(--muted);
+}
+
+.field-group label,
+.filter-card label,
+.panel-heading h3,
+.section-header h3,
+.form-section-title strong,
+.match-title,
+.tournament-title,
+.event-summary-section-head h3,
+.card-language-setting strong,
+.card-database-toolbar strong,
+.deck-zone-head strong,
+.event-insight-card strong,
+.event-matchup-row strong,
+.event-round-title-row > strong {
+    color: #f5f7ff;
+}
+
+input,
+select,
+textarea {
+    border: 1px solid rgba(196, 162, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: rgba(168, 178, 209, 0.72);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: rgba(125, 88, 255, 0.64);
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: 0 0 0 4px rgba(125, 88, 255, 0.14);
+}
+
+.primary-button {
+    background: linear-gradient(145deg, #845cff, #5d3bdb);
+    color: #ffffff;
+    box-shadow:
+        0 14px 30px rgba(81, 52, 185, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.secondary-button,
+.match-actions .link-button,
+.text-action-button,
+.danger-button,
+.danger-large-button,
+.deck-build-button,
+.link-button {
+    border-color: rgba(196, 162, 255, 0.14);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--primary-strong);
+}
+
+.danger-button,
+.danger-large-button {
+    color: #ffb1bf;
+    border-color: rgba(255, 132, 154, 0.18);
+    background: rgba(255, 132, 154, 0.06);
+}
+
+.result-badge.win,
+.event-round-result.win {
+    background: rgba(85, 231, 170, 0.12);
+    color: var(--success);
+}
+
+.result-badge.loss,
+.event-round-result.loss {
+    background: rgba(255, 132, 154, 0.12);
+    color: var(--danger);
+}
+
+.panel-chip,
+.required-pill,
+.deck-count-badge,
+.banlist-pill {
+    background: rgba(240, 199, 110, 0.10);
+    color: var(--accent);
+    border: 1px solid rgba(240, 199, 110, 0.14);
+}
+
+.banlist-pill.forbidden {
+    background: rgba(255, 132, 154, 0.12);
+    color: var(--danger);
+    border-color: rgba(255, 132, 154, 0.16);
+}
+
+.metric-row {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.metric-row strong,
+.game-summary-row strong,
+.deck-legality.legal,
+.tournament-card-score span,
+.event-matchup-row > span,
+.link-button,
+.text-action-button {
+    color: var(--accent);
+}
+
+.match-note,
+.game-summary-row,
+.card-database-toolbar,
+.side-helper,
+.opening-hand-field,
+.deck-card-row {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(196, 162, 255, 0.08);
+}
+
+.game-editor {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.game-editor-head {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.empty-state {
+    border-color: rgba(196, 162, 255, 0.16);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted);
+}
+
+.bottom-nav {
+    border-color: rgba(240, 199, 110, 0.14);
+    background:
+        linear-gradient(180deg, rgba(10, 14, 28, 0.95), rgba(8, 11, 22, 0.92));
+    box-shadow:
+        0 22px 55px rgba(2, 5, 16, 0.48),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.nav-button {
+    color: #8f9ac0;
+}
+
+.nav-button.active {
+    background:
+        linear-gradient(145deg, rgba(125, 88, 255, 0.16), rgba(240, 199, 110, 0.08));
+    color: #f7f3ff;
+}
+
+.event-summary-toolbar {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+    background: rgba(11, 16, 31, 0.92);
+}
+
+.event-summary-close {
+    border-color: rgba(196, 162, 255, 0.16);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+}
+
+.event-hero {
+    background:
+        radial-gradient(circle at top right, rgba(240, 199, 110, 0.16), transparent 34%),
+        radial-gradient(circle at left, rgba(52, 216, 255, 0.12), transparent 26%),
+        linear-gradient(145deg, #171032, #0d1226);
+}
+
+.event-hero.negative {
+    background:
+        radial-gradient(circle at top right, rgba(255, 132, 154, 0.12), transparent 34%),
+        linear-gradient(145deg, #2b1320, #161628);
+}
+
+.event-hero.neutral {
+    background:
+        radial-gradient(circle at top right, rgba(240, 199, 110, 0.12), transparent 34%),
+        linear-gradient(145deg, #241d15, #151a27);
+}
+
+.side-card-chip,
+.hand-card-chip {
+    border-color: rgba(196, 162, 255, 0.14);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+}
+
+.side-card-chip.selected,
+.hand-card-chip.selected,
+.card-search-result:hover {
+    border-color: rgba(240, 199, 110, 0.26);
+    background: rgba(240, 199, 110, 0.08);
+    color: #fff8e2;
+}
+
+.tournament-open-button:hover,
+.quick-card:hover,
+.primary-button:hover,
+.secondary-button:hover,
+.deck-build-button:hover,
+.card-search-result:hover {
+    transform: translateY(-1px);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.cloud-warning {
+    border-color: rgba(240, 199, 110, 0.18);
+    background: rgba(240, 199, 110, 0.08);
+    color: #f5deb1;
+}
+
+.status-message {
+    background: rgba(125, 88, 255, 0.12);
+    color: #e8dcff;
+}
+
+@media (max-width: 520px) {
+    body {
+        background:
+            radial-gradient(circle at 12% 0%, rgba(125, 88, 255, 0.22), transparent 18rem),
+            radial-gradient(circle at 88% 8%, rgba(52, 216, 255, 0.16), transparent 16rem),
+            linear-gradient(180deg, #080b1a 0, #0b1124 320px, #0d1226 100%);
+    }
+}

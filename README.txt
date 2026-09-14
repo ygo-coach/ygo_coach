@@ -90,3 +90,16 @@ GitHub Pages redéploiera automatiquement.
 Si l'ancienne version reste affichée :
     PC : Ctrl + F5
     iPhone : fermer complètement la PWA puis la rouvrir
+
+
+V6.5.1 — THÈME VISUEL YU-GI-OH MODERNE
+
+Cette version retravaille surtout le style visuel :
+    - palette sombre violet / bleu nuit / or
+    - ambiance plus "duel" et moins "site de banque"
+    - cartes et panneaux en verre sombre
+    - boutons plus flashy
+    - navigation basse plus immersive
+    - résumé de tournoi restylé
+
+Aucune migration Supabase n'est nécessaire.

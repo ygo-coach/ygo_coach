@@ -18,7 +18,7 @@ const LEGACY_STORAGE_KEYS = {
     matches: "ygoMatches"
 };
 
-const APP_VERSION = "6.5";
+const APP_VERSION = "6.5.1";
 
 const ADMIN_EMAIL = "felixlefevre170@gmail.com";
 
